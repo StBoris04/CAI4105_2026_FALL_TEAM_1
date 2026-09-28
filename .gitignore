@@ -1,36 +1,31 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Python bytecode and test/linter caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Local Python environments
+.venv/
+venv/
+ENV/
 
-# testing
-/coverage
+# Model outputs and experiment artifacts
+artifacts/
+*.joblib
+*.pkl
+*.pickle
+*.onnx
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env*.local
+# Local environment and editor/OS files
 .env
+.env.*
+!.env.example
+.DS_Store
+.idea/
+.vscode/
 
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Local-only project guidance
+/AGENTS.md
