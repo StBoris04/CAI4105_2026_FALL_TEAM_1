@@ -19,7 +19,7 @@ from sklearn.pipeline import Pipeline
 # Validation tools
 from sklearn.model_selection import KFold, cross_validate, GridSearchCV
 
-# Regression models (4 required + 1 extra)
+# Regression models
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import (RandomForestRegressor, GradientBoostingRegressor,
