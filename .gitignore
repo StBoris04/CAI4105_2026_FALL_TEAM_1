@@ -29,3 +29,6 @@ artifacts/
 
 # Local-only project guidance
 /AGENTS.md
+
+# Jupyter notebook-generated files
+.ipynb_checkpoints/
