@@ -155,3 +155,36 @@ baseline_results = [evaluate(name, make_pipe(m)) for name, m in baseline_models.
 baseline_df = pd.DataFrame(baseline_results).sort_values('CV_RMSE').reset_index(drop=True)
 baseline_df['Gap (CV - Train)'] = baseline_df['CV_RMSE'] - baseline_df['Train_RMSE']   # overfitting indicator
 baseline_df.round(1)
+
+# Visual comparison of train vs. validation RMSE
+
+ax = baseline_df.set_index('Model')[['Train_RMSE', 'CV_RMSE']].plot(kind='bar', figsize=(8, 4))
+ax.set_ylabel('RMSE ($)')
+ax.set_title('Baseline models: Train vs. 5-fold CV RMSE')
+plt.xticks(rotation=20, ha='right')
+plt.tight_layout()
+plt.show()
+
+# 7 & 8. Improve the models with Grid Search and select final model
+
+best_name = min(grid_searches, key=lambda n: -grid_searches[n].best_score_)
+final_model = grid_searches[best_name].best_estimator_   # already refit on ALL training data (refit=True)
+
+print('Final model:   ', best_name)
+print('Best params:   ', grid_searches[best_name].best_params_)
+print(f'CV RMSE:        {-grid_searches[best_name].best_score_:.1f}')
+print(f'Avg rent:       {y.mean():.1f}  (RMSE as % of mean rent: {-grid_searches[best_name].best_score_ / y.mean():.1%})')
+
+# Feature importance for tree-based final models (helps explain the model)
+
+model_step = final_model.named_steps['model']
+if hasattr(model_step, 'feature_importances_'):
+    feat_names = final_model.named_steps['preprocess'].get_feature_names_out()
+    imp = (pd.Series(model_step.feature_importances_, index=feat_names)
+             .sort_values(ascending=False).head(15))
+    imp.sort_values().plot(kind='barh', figsize=(7, 5), title=f'Top 15 feature importances: {best_name}')
+    plt.tight_layout(); plt.show()
+else:
+    print(f'{best_name} has no built-in feature_importances_ (use permutation importance during fine-tuning).')
+
+
