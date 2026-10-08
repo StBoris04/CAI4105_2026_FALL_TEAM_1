@@ -100,11 +100,11 @@ def add_features(df):
 
 DROP_COLS = ['ID', 'category']
 
-# Training predictors and target
+# Adding training predictors and target
 X = add_features(df_train.drop(columns=DROP_COLS + ['price']))
 y = df_train['price']
 
-# Test predictors (same transformations, no target available)
+# Test predictors (same transformations, no target available -_-)
 X_test = add_features(df_test.drop(columns=DROP_COLS))
 
 # Separate dtypes for preprocessing steps
@@ -112,5 +112,22 @@ cat_cols = X.select_dtypes(exclude='number').columns.tolist()   # text columns (
 num_cols = [c for c in X.columns if c not in cat_cols]
 
 print('Categorical:', cat_cols)
+
+cv = KFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+SCORING = 'neg_root_mean_squared_error'   # sklearn maximizes scores, so RMSE is returned as a negative
 print('Numeric:    ', num_cols)
 print('X shape:', X.shape, '| X_test shape:', X_test.shape)
+
+# Defining processes!
+def make_preprocess():
+    return ColumnTransformer([
+        ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False), cat_cols),
+        ('num', StandardScaler(), num_cols)
+    ])
+
+def make_pipe(model):
+    """Wrap any regressor into a full preprocess -> model pipeline."""
+    return Pipeline([
+        ('preprocess', make_preprocess()),
+        ('model', model)
+    ])
