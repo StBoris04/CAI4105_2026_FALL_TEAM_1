@@ -131,3 +131,27 @@ def make_pipe(model):
         ('preprocess', make_preprocess()),
         ('model', model)
     ])
+  baseline_models = {
+    'Linear Regression':   LinearRegression(),
+    'Decision Tree':       DecisionTreeRegressor(random_state=RANDOM_STATE),
+    'Random Forest':       RandomForestRegressor(n_estimators=200, random_state=RANDOM_STATE, n_jobs=-1),
+    'Gradient Boosting':   GradientBoostingRegressor(random_state=RANDOM_STATE),
+    'Hist Gradient Boost': HistGradientBoostingRegressor(random_state=RANDOM_STATE),   # extra model
+}
+
+def evaluate(name, pipe):
+    """Run 5-fold CV and return mean train/validation RMSE and fit time."""
+    t0 = time.perf_counter()
+    res = cross_validate(pipe, X, y, cv=cv, scoring=SCORING, return_train_score=True, n_jobs=-1)
+    return {
+        'Model':          name,
+        'Train_RMSE':     -res['train_score'].mean(),
+        'CV_RMSE':        -res['test_score'].mean(),
+        'CV_RMSE_std':    res['test_score'].std(),
+        'Time_sec':       time.perf_counter() - t0,
+    }
+
+baseline_results = [evaluate(name, make_pipe(m)) for name, m in baseline_models.items()]
+baseline_df = pd.DataFrame(baseline_results).sort_values('CV_RMSE').reset_index(drop=True)
+baseline_df['Gap (CV - Train)'] = baseline_df['CV_RMSE'] - baseline_df['Train_RMSE']   # overfitting indicator
+baseline_df.round(1)
