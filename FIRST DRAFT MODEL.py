@@ -77,3 +77,40 @@ plt.colorbar(sc, ax=axes[2])
 
 plt.tight_layout()
 plt.show()
+
+# Correlation of numeric features with price
+num_preview = ['price', 'bathrooms', 'bedrooms', 'square_feet', 'latitude', 'longitude']
+display(df_train[num_preview].corr()[['price']].sort_values('price', ascending=False))
+
+# Median price by state (top 10 most expensive states with at least 30 listings)
+state_stats = df_train.groupby('state')['price'].agg(['count', 'median'])
+display(state_stats[state_stats['count'] >= 30].sort_values('median', ascending=False).head(10))
+
+
+# PREPARE DATA
+
+def add_features(df):
+    """Create engineered features. Uses only values within each row,
+    so applying it to train and test separately causes no data leakage."""
+    df = df.copy()
+    df['sqft_per_bed'] = df['square_feet'] / (df['bedrooms'] + 1)   # +1 avoids divide-by-zero for studios
+    df['bath_per_bed'] = df['bathrooms'] / (df['bedrooms'] + 1)
+    df['total_rooms']  = df['bedrooms'] + df['bathrooms']
+    return df
+
+DROP_COLS = ['ID', 'category']
+
+# Training predictors and target
+X = add_features(df_train.drop(columns=DROP_COLS + ['price']))
+y = df_train['price']
+
+# Test predictors (same transformations, no target available)
+X_test = add_features(df_test.drop(columns=DROP_COLS))
+
+# Separate dtypes for preprocessing steps
+cat_cols = X.select_dtypes(exclude='number').columns.tolist()   # text columns (works for object or string dtype)
+num_cols = [c for c in X.columns if c not in cat_cols]
+
+print('Categorical:', cat_cols)
+print('Numeric:    ', num_cols)
+print('X shape:', X.shape, '| X_test shape:', X_test.shape)
