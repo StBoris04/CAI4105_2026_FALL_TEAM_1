@@ -175,16 +175,26 @@ print('Best params:   ', grid_searches[best_name].best_params_)
 print(f'CV RMSE:        {-grid_searches[best_name].best_score_:.1f}')
 print(f'Avg rent:       {y.mean():.1f}  (RMSE as % of mean rent: {-grid_searches[best_name].best_score_ / y.mean():.1%})')
 
-# Feature importance for tree-based final models (helps explain the model)
+# Feature importance for tree-based final models (helps explain the model) COMMENTED OUT
 
-model_step = final_model.named_steps['model']
-if hasattr(model_step, 'feature_importances_'):
-    feat_names = final_model.named_steps['preprocess'].get_feature_names_out()
-    imp = (pd.Series(model_step.feature_importances_, index=feat_names)
-             .sort_values(ascending=False).head(15))
-    imp.sort_values().plot(kind='barh', figsize=(7, 5), title=f'Top 15 feature importances: {best_name}')
-    plt.tight_layout(); plt.show()
-else:
-    print(f'{best_name} has no built-in feature_importances_ (use permutation importance during fine-tuning).')
+# model_step = final_model.named_steps['model']
+# if hasattr(model_step, 'feature_importances_'):
+  #  feat_names = final_model.named_steps['preprocess'].get_feature_names_out()
+  #  imp = (pd.Series(model_step.feature_importances_, index=feat_names)
+  #           .sort_values(ascending=False).head(15))
+ #   imp.sort_values().plot(kind='barh', figsize=(7, 5), title=f'Top 15 feature importances: {best_name}')
+ #   plt.tight_layout(); plt.show()
+# else:
+ #   print(f'{best_name} has no built-in feature_importances_ (use permutation importance during fine-tuning).') ""
+test_pred = final_model.predict(X_test)
 
+predictions = pd.DataFrame({'ID': df_test['ID'], 'price': test_pred})
+predictions.to_csv('predictions.csv', index=False)
+
+# Sanity checks: one prediction per test row, no missing values, reasonable range
+assert len(predictions) == len(df_test)
+assert predictions['price'].notna().all()
+print('Saved predictions.csv:', predictions.shape)
+display(predictions.describe().T)
+display(predictions.head())
 
