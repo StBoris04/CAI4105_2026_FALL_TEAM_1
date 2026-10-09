@@ -1,6 +1,7 @@
 # First draft for apartment predictor
 
 # 1. Import packages
+from IPython.display import display
 
 # Core data handling
 import time
