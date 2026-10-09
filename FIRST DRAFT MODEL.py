@@ -41,7 +41,7 @@ display(df_train.head())
 df_train.info()
 
 # Quick peek at the numeric stats (skipping ID since it's just a useless tag)
-display(df_train.drop(columns='ID').describe().T)[cite: 1, 2]
+display(df_train.drop(columns='ID').describe().T)
 
 # Supposedly the data is clean, but let's double-check that no missing values snuck in[cite: 1, 2]
 print('Missing values (train):', df_train.isna().sum().sum())[cite: 1, 2]
@@ -131,7 +131,7 @@ def make_pipe(model):
         ('preprocess', make_preprocess()),
         ('model', model)
     ])
-  baseline_models = {
+baseline_models = {
     'Linear Regression':   LinearRegression(),
     'Decision Tree':       DecisionTreeRegressor(random_state=RANDOM_STATE),
     'Random Forest':       RandomForestRegressor(n_estimators=200, random_state=RANDOM_STATE, n_jobs=-1),
