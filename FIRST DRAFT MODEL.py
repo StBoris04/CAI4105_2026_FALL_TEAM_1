@@ -23,10 +23,12 @@ from sklearn.model_selection import KFold, cross_validate, GridSearchCV
 
 # Regression models
 from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, SGDRegressor   # SGDRegressor = linear regression fit by gradient descent
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import (RandomForestRegressor, GradientBoostingRegressor,
                               HistGradientBoostingRegressor)
 import xgboost
+from xgboost import XGBRegressor   # extra gradient boosting model (XGBoost library)
 
 # Reproducibility: every random process uses this seed
 RANDOM_STATE = 42
@@ -137,6 +139,7 @@ baseline_models = {
     'Decision Tree':       DecisionTreeRegressor(random_state=RANDOM_STATE),
     'Random Forest':       RandomForestRegressor(n_estimators=200, random_state=RANDOM_STATE, n_jobs=-1),
     'Gradient Boosting':   GradientBoostingRegressor(random_state=RANDOM_STATE),
+    'SGD (Gradient Descent)': SGDRegressor(max_iter=2000, tol=1e-4, random_state=RANDOM_STATE),   # linear model fit by gradient descent
     'Hist Gradient Boost': HistGradientBoostingRegressor(random_state=RANDOM_STATE),   # extra model
 }
 
