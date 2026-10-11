@@ -5,6 +5,7 @@ from IPython.display import display
 
 # Core data handling
 import time
+import os
 import warnings
 import numpy as np
 import pandas as pd
@@ -32,6 +33,9 @@ from xgboost import XGBRegressor   # extra gradient boosting model (XGBoost libr
 
 # Reproducibility: every random process uses this seed
 RANDOM_STATE = 42
+
+pd.set_option('display.max_columns', None)   # show every column of the comparison table in the terminal
+pd.set_option('display.width', 250)
 
 # 2. Load and inspect
 
@@ -158,7 +162,8 @@ def evaluate(name, pipe):
 baseline_results = [evaluate(name, make_pipe(m)) for name, m in baseline_models.items()]
 baseline_df = pd.DataFrame(baseline_results).sort_values('CV_RMSE').reset_index(drop=True)
 baseline_df['Gap (CV - Train)'] = baseline_df['CV_RMSE'] - baseline_df['Train_RMSE']   # overfitting indicator
-baseline_df.round(1)
+# baseline_df.round(1)
+display(baseline_df.round(1)) # new display line
 
 # Visual comparison of train vs. validation RMSE
 
@@ -255,7 +260,9 @@ candidate_models.update({name + ' (tuned)': search.best_estimator_
 best_row = comparison_df.iloc[0]
 best_name = best_row['Model']
 final_model = candidate_models[best_name]
+fit_start = time.perf_counter()
 final_model.fit(X, y)  # Fit the selected model on all labeled rows.
+final_fit_sec = time.perf_counter() - fit_start 
 
 print('Final model:   ', best_name)
 if best_name.endswith(' (tuned)'):
@@ -265,26 +272,118 @@ else:
 print(f"CV RMSE:        {best_row['CV_RMSE']:.1f}")
 print(f"Avg rent:       {y.mean():.1f}  (RMSE as % of mean rent: {best_row['CV_RMSE'] / y.mean():.1%})")
 
-# Feature importance for tree-based final models (helps explain the model) COMMENTED OUT
-
-# model_step = final_model.named_steps['model']
-# if hasattr(model_step, 'feature_importances_'):
-  #  feat_names = final_model.named_steps['preprocess'].get_feature_names_out()
-  #  imp = (pd.Series(model_step.feature_importances_, index=feat_names)
-  #           .sort_values(ascending=False).head(15))
- #   imp.sort_values().plot(kind='barh', figsize=(7, 5), title=f'Top 15 feature importances: {best_name}')
- #   plt.tight_layout(); plt.show()
-# else:
- #   print(f'{best_name} has no built-in feature_importances_ (use permutation importance during fine-tuning).') ""
+# Feature importance for tree-based final models (helps explain the model)
+model_step = final_model.named_steps['model']
+feat_names = final_model.named_steps['preprocess'].get_feature_names_out()
+top_features = None
+if hasattr(model_step, 'feature_importances_'):
+    imp = (pd.Series(model_step.feature_importances_, index=feat_names)
+             .sort_values(ascending=False).head(15))
+    top_features = imp.head(5)
+    imp.sort_values().plot(kind='barh', figsize=(7, 5), title=f'Top 15 feature importances: {best_name}')
+    plt.tight_layout(); plt.show()
+elif hasattr(model_step, 'coef_'):
+    coefs = pd.Series(model_step.coef_, index=feat_names)   # linear models: coefficients on scaled features
+    top_features = coefs.abs().sort_values(ascending=False).head(5)
+else:
+    print(f'{best_name} has no built-in feature_importances_ (use permutation importance during fine-tuning).')
+ 
+# Model selection justification
+# Printed (not just written in comments) so the reasoning is visible in the output.
+def lookup(model_name):
+    """Return the comparison_df row for a model, or None if it was not run."""
+    rows = comparison_df[comparison_df['Model'] == model_name]
+    return rows.iloc[0] if len(rows) else None
+ 
+runner_up = comparison_df.iloc[1]
+lin_row   = lookup('Linear Regression')
+tree_row  = lookup('Decision Tree')
+gap       = best_row['CV_RMSE'] - best_row['Train_RMSE']
+base_name = best_name.removesuffix(' (tuned)')
+ 
+# Model complexity: report the size-related settings the final model actually uses
+size_keys = ['n_estimators', 'max_iter', 'max_depth', 'max_leaf_nodes', 'min_samples_leaf', 'learning_rate']
+size_info = {k: v for k, v in model_step.get_params().items() if k in size_keys and v is not None}
+ 
+# Interpretability notes
+interpretability_notes = {
+    'Linear Regression':      'very high: each coefficient is the change in rent per unit of a feature',
+    'SGD (Gradient Descent)': 'very high: same linear coefficients as Linear Regression',
+    'Decision Tree':          'high: the splits can be read as if/then rules',
+    'Random Forest':          'moderate: an average of many trees; explained through feature importances',
+    'Gradient Boosting':      'moderate: a sum of many small trees; explained through feature importances',
+    'Hist Gradient Boost':    'moderate: a sum of many small trees; no built-in importances (use permutation importance)',
+    'XGBoost':                'moderate: a sum of many small trees; explained through feature importances',
+}
+ 
+print('\n' + '=' * 78)
+print(f'MODEL SELECTION JUSTIFICATION: {best_name}')
+print('=' * 78)
+ 
+print('\n1. Validation performance')
+print(f"   - Lowest 5-fold CV RMSE of all {len(comparison_df)} model versions: "
+      f"${best_row['CV_RMSE']:.1f} (+/- {best_row['CV_RMSE_std']:.1f} across folds).")
+print(f"   - Runner-up: {runner_up['Model']} at ${runner_up['CV_RMSE']:.1f} "
+      f"({runner_up['CV_RMSE'] - best_row['CV_RMSE']:.1f} higher).")
+if runner_up['CV_RMSE'] - best_row['CV_RMSE'] < best_row['CV_RMSE_std']:
+    print('     The gap is smaller than one fold standard deviation, so the top models are close;')
+    print('     we keep the lowest mean CV RMSE as the deciding factor because RMSE is the competition metric.')
+if lin_row is not None:
+    print(f"   - {lin_row['CV_RMSE'] - best_row['CV_RMSE']:.1f} lower than the Linear Regression baseline "
+          f"(${lin_row['CV_RMSE']:.1f}).")
+ 
+print('\n2. Overfitting / underfitting')
+print(f"   - Train RMSE ${best_row['Train_RMSE']:.1f} vs CV RMSE ${best_row['CV_RMSE']:.1f} "
+      f"(gap ${gap:.1f}, {gap / best_row['CV_RMSE']:.0%} of CV RMSE).")
+if gap / best_row['CV_RMSE'] > 0.30:
+    print('   - This is a noticeable overfitting tendency (the model fits training rows much more tightly than new ones).')
+    print('     It is kept in check by a small learning rate, row subsampling, and CV-chosen tree count/depth, and the')
+    print('     held-out CV RMSE already includes this effect: it is still the lowest of all models.')
+else:
+    print('   - The gap is small, so the model is not overfitting much, and its CV RMSE is the lowest of all models.')
+if tree_row is not None:
+    print(f"   - For contrast, the untuned Decision Tree overfits (train ${tree_row['Train_RMSE']:.1f} "
+          f"vs CV ${tree_row['CV_RMSE']:.1f}).")
+if lin_row is not None:
+    print(f"   - Linear Regression underfits (train ${lin_row['Train_RMSE']:.1f} and CV ${lin_row['CV_RMSE']:.1f} "
+          f"are close but both high): rent vs. location is not linear.")
+ 
+print('\n3. Model complexity')
+print(f'   - Settings: {size_info}')
+print('   - More complex than a single tree or a linear model, but Grid Search chose this size using CV,')
+print('     so the extra complexity is justified by better held-out performance.')
+ 
+print('\n4. Computational requirements')
+print(f"   - Search/CV time for this model: {best_row['Time_sec']:.1f}s; final refit on all {len(X):,} rows: {final_fit_sec:.1f}s.")
+print('   - Prediction on the test set is near-instant, so the cost is acceptable for this dataset size.')
+ 
+print('\n5. Interpretability')
+print(f"   - {interpretability_notes.get(base_name, 'see feature importances')}.")
+if top_features is not None:
+    print('   - Top drivers of predicted rent: ' +
+          ', '.join(f"{n.replace('num__', '').replace('cat__', '')} ({v:.2f})" for n, v in top_features.items()))
+ 
+print('\nConclusion: we expect this model to generalize best to unseen apartments because it has the lowest')
+print('cross-validated RMSE (which already accounts for its overfitting), with acceptable cost and explainability.')
+print('=' * 78 + '\n')
+ 
+# Generate predictions for the test set
 test_pred = final_model.predict(X_test)
-
-predictions = pd.DataFrame({'ID': df_test['ID'], 'price': test_pred})
+test_pred = np.clip(test_pred, 0, None)   # safety: a rent prediction can never be negative
+ 
+# Keep the test IDs in their original order, one row per test observation
+predictions = pd.DataFrame({'ID': df_test['ID'].values, 'price': test_pred.round(2)})
 predictions.to_csv('predictions.csv', index=False)
-
-# Sanity checks: one prediction per test row, no missing values, reasonable range
-assert len(predictions) == len(df_test)
-assert predictions['price'].notna().all()
-print('Saved predictions.csv:', predictions.shape)
-display(predictions.describe().T)
-display(predictions.head())
-
+ 
+# checks on the SAVED file: correct columns, every test ID exactly once, valid prices
+saved = pd.read_csv('predictions.csv')
+assert list(saved.columns) == ['ID', 'price'], 'predictions.csv must have exactly the columns ID, price'
+assert len(saved) == len(df_test), 'one prediction per test row'
+assert saved['ID'].equals(df_test['ID']), 'IDs must match challenge1_test.csv (same IDs, same order)'
+assert saved['ID'].is_unique, 'no duplicate IDs'
+assert saved['price'].notna().all() and (saved['price'] > 0).all(), 'no missing or non-positive prices'
+ 
+print(f"Saved predictions.csv: {len(saved)} rows (all {len(df_test)} test IDs), columns {list(saved.columns)}")
+print('Location:', os.path.abspath('predictions.csv'))
+display(saved['price'].describe().round(1).to_frame().T)
+display(saved.head())
