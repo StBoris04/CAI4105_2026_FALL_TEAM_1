@@ -248,13 +248,22 @@ comparison_df['Gap (CV - Train)'] = comparison_df['CV_RMSE'] - comparison_df['Tr
 pd.set_option('display.max_colwidth', 120)
 display(comparison_df.round(1))
 
-best_name = min(grid_searches, key=lambda n: -grid_searches[n].best_score_)
-final_model = grid_searches[best_name].best_estimator_   # already refit on ALL training data (refit=True)
+# Include baseline candidates: tuning is not guaranteed to improve them.
+candidate_models = {name: make_pipe(model) for name, model in baseline_models.items()}
+candidate_models.update({name + ' (tuned)': search.best_estimator_
+                         for name, search in grid_searches.items()})
+best_row = comparison_df.iloc[0]
+best_name = best_row['Model']
+final_model = candidate_models[best_name]
+final_model.fit(X, y)  # Fit the selected model on all labeled rows.
 
 print('Final model:   ', best_name)
-print('Best params:   ', grid_searches[best_name].best_params_)
-print(f'CV RMSE:        {-grid_searches[best_name].best_score_:.1f}')
-print(f'Avg rent:       {y.mean():.1f}  (RMSE as % of mean rent: {-grid_searches[best_name].best_score_ / y.mean():.1%})')
+if best_name.endswith(' (tuned)'):
+    print('Best params:   ', grid_searches[best_name.removesuffix(' (tuned)')].best_params_)
+else:
+    print('Best params:    baseline settings')
+print(f"CV RMSE:        {best_row['CV_RMSE']:.1f}")
+print(f"Avg rent:       {y.mean():.1f}  (RMSE as % of mean rent: {best_row['CV_RMSE'] / y.mean():.1%})")
 
 # Feature importance for tree-based final models (helps explain the model) COMMENTED OUT
 
