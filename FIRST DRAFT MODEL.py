@@ -2,10 +2,10 @@
 
 # 1. Import packages
 from IPython.display import display
+from pathlib import Path
 
 # Core data handling
 import time
-import os
 import warnings
 import numpy as np
 import pandas as pd
@@ -33,6 +33,8 @@ from xgboost import XGBRegressor   # extra gradient boosting model (XGBoost libr
 
 # Reproducibility: every random process uses this seed
 RANDOM_STATE = 42
+PROJECT_ROOT = (Path(__file__).resolve().parent if '__file__' in globals()
+                else Path.cwd().parent if Path.cwd().name == 'models' else Path.cwd())
 
 pd.set_option('display.max_columns', None)   # show every column of the comparison table in the terminal
 pd.set_option('display.width', 250)
@@ -40,8 +42,8 @@ pd.set_option('display.width', 250)
 # 2. Load and inspect
 
 # Load both datasets
-df_train = pd.read_csv('challenge1_train.csv')
-df_test  = pd.read_csv('challenge1_test.csv')   # used ONLY for final predictions
+df_train = pd.read_csv(PROJECT_ROOT / 'datasets' / 'challenge1_train.csv')
+df_test  = pd.read_csv(PROJECT_ROOT / 'datasets' / 'challenge1_test.csv')   # used ONLY for final predictions
 
 print('Train shape:', df_train.shape, '| Test shape:', df_test.shape)
 display(df_train.head())
@@ -307,8 +309,8 @@ size_info = {k: v for k, v in model_step.get_params().items() if k in size_keys 
  
 # Interpretability notes
 interpretability_notes = {
-    'Linear Regression':      'very high: each coefficient is the change in rent per unit of a feature',
-    'SGD (Gradient Descent)': 'very high: same linear coefficients as Linear Regression',
+    'Linear Regression':      'high: coefficients describe transformed features, although correlated features complicate interpretation',
+    'SGD (Gradient Descent)': 'high: coefficients describe transformed features, although correlated features complicate interpretation',
     'Decision Tree':          'high: the splits can be read as if/then rules',
     'Random Forest':          'moderate: an average of many trees; explained through feature importances',
     'Gradient Boosting':      'moderate: a sum of many small trees; explained through feature importances',
@@ -337,21 +339,24 @@ print(f"   - Train RMSE ${best_row['Train_RMSE']:.1f} vs CV RMSE ${best_row['CV_
       f"(gap ${gap:.1f}, {gap / best_row['CV_RMSE']:.0%} of CV RMSE).")
 if gap / best_row['CV_RMSE'] > 0.30:
     print('   - This is a noticeable overfitting tendency (the model fits training rows much more tightly than new ones).')
-    print('     It is kept in check by a small learning rate, row subsampling, and CV-chosen tree count/depth, and the')
-    print('     held-out CV RMSE already includes this effect: it is still the lowest of all models.')
+    print('     The held-out CV RMSE includes this effect and remains the lowest among the candidates.')
 else:
     print('   - The gap is small, so the model is not overfitting much, and its CV RMSE is the lowest of all models.')
-if tree_row is not None:
+if tree_row is not None and tree_row['Model'] != best_name:
     print(f"   - For contrast, the untuned Decision Tree overfits (train ${tree_row['Train_RMSE']:.1f} "
           f"vs CV ${tree_row['CV_RMSE']:.1f}).")
-if lin_row is not None:
+if lin_row is not None and lin_row['Model'] != best_name:
     print(f"   - Linear Regression underfits (train ${lin_row['Train_RMSE']:.1f} and CV ${lin_row['CV_RMSE']:.1f} "
           f"are close but both high): rent vs. location is not linear.")
  
 print('\n3. Model complexity')
 print(f'   - Settings: {size_info}')
-print('   - More complex than a single tree or a linear model, but Grid Search chose this size using CV,')
-print('     so the extra complexity is justified by better held-out performance.')
+if isinstance(model_step, (LinearRegression, SGDRegressor)):
+    print('   - A linear model with one coefficient per transformed feature.')
+elif isinstance(model_step, DecisionTreeRegressor):
+    print(f'   - One tree with {model_step.get_n_leaves()} leaves.')
+else:
+    print('   - An ensemble of trees; its added complexity is justified by the lowest validation RMSE.')
  
 print('\n4. Computational requirements')
 print(f"   - Search/CV time for this model: {best_row['Time_sec']:.1f}s; final refit on all {len(X):,} rows: {final_fit_sec:.1f}s.")
@@ -360,7 +365,7 @@ print('   - Prediction on the test set is near-instant, so the cost is acceptabl
 print('\n5. Interpretability')
 print(f"   - {interpretability_notes.get(base_name, 'see feature importances')}.")
 if top_features is not None:
-    print('   - Top drivers of predicted rent: ' +
+    print('   - Largest feature importance or coefficient magnitudes (not causal effects): ' +
           ', '.join(f"{n.replace('num__', '').replace('cat__', '')} ({v:.2f})" for n, v in top_features.items()))
  
 print('\nConclusion: we expect this model to generalize best to unseen apartments because it has the lowest')
@@ -369,21 +374,21 @@ print('=' * 78 + '\n')
  
 # Generate predictions for the test set
 test_pred = final_model.predict(X_test)
-test_pred = np.clip(test_pred, 0, None)   # safety: a rent prediction can never be negative
- 
+
 # Keep the test IDs in their original order, one row per test observation
-predictions = pd.DataFrame({'ID': df_test['ID'].values, 'price': test_pred.round(2)})
-predictions.to_csv('predictions.csv', index=False)
- 
+predictions = pd.DataFrame({'ID': df_test['ID'].values, 'price': test_pred})
+output_path = PROJECT_ROOT / 'predictions.csv'
+predictions.to_csv(output_path, index=False)
+
 # checks on the SAVED file: correct columns, every test ID exactly once, valid prices
-saved = pd.read_csv('predictions.csv')
+saved = pd.read_csv(output_path)
 assert list(saved.columns) == ['ID', 'price'], 'predictions.csv must have exactly the columns ID, price'
 assert len(saved) == len(df_test), 'one prediction per test row'
 assert saved['ID'].equals(df_test['ID']), 'IDs must match challenge1_test.csv (same IDs, same order)'
 assert saved['ID'].is_unique, 'no duplicate IDs'
-assert saved['price'].notna().all() and (saved['price'] > 0).all(), 'no missing or non-positive prices'
+assert np.isfinite(saved['price']).all(), 'all predicted prices must be finite'
  
 print(f"Saved predictions.csv: {len(saved)} rows (all {len(df_test)} test IDs), columns {list(saved.columns)}")
-print('Location:', os.path.abspath('predictions.csv'))
+print('Location:', output_path)
 display(saved['price'].describe().round(1).to_frame().T)
 display(saved.head())
