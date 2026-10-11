@@ -171,6 +171,83 @@ plt.show()
 
 # 7 & 8. Improve the models with Grid Search and select final model
 
+# Hyperparameter grids for each model we tune.
+# 'model__' prefix = the parameter belongs to the 'model' step of the pipeline.
+# Every grid uses the SAME 5 folds (cv) as the baseline, so results are comparable.
+param_grids = {
+    # Gradient descent: tune regularization strength/type and the learning rate schedule
+    'SGD (Gradient Descent)': (
+        SGDRegressor(max_iter=2000, tol=1e-4, random_state=RANDOM_STATE),
+        {'model__alpha':         [1e-4, 1e-3, 1e-2],        # regularization strength
+         'model__penalty':       ['l2', 'elasticnet'],      # type of regularization
+         'model__learning_rate': ['adaptive'],              # shrink step size when loss stops improving
+         'model__eta0':          [0.01]}                    # starting step size
+    ),
+    # Decision Tree: limit depth / leaf size to fight the heavy overfitting seen in the baseline
+    'Decision Tree': (
+        DecisionTreeRegressor(random_state=RANDOM_STATE),
+        {'model__max_depth':        [8, 12, 16, None],
+         'model__min_samples_leaf': [1, 5, 10]}
+    ),
+    # Random Forest: features per split and leaf size
+    'Random Forest': (
+        RandomForestRegressor(n_estimators=200, random_state=RANDOM_STATE, n_jobs=-1),
+        {'model__max_features':     [0.33, 0.5, 1.0],
+         'model__min_samples_leaf': [1, 3]}
+    ),
+    # Gradient Boosting: number of trees, step size, tree depth, row sampling
+    'Gradient Boosting': (
+        GradientBoostingRegressor(random_state=RANDOM_STATE),
+        {'model__n_estimators':  [300, 500],
+         'model__learning_rate': [0.05, 0.1],
+         'model__max_depth':     [4, 5, 6],
+         'model__subsample':     [0.8]}
+    ),
+    # Hist Gradient Boosting: faster boosting, tune step size, rounds, tree size
+    'Hist Gradient Boost': (
+        HistGradientBoostingRegressor(random_state=RANDOM_STATE),
+        {'model__learning_rate':  [0.05, 0.1],
+         'model__max_iter':       [300, 600],
+         'model__max_leaf_nodes': [15, 31]}
+    ),
+    # XGBoost: same ideas as Gradient Boosting plus column sampling
+    'XGBoost': (
+        XGBRegressor(subsample=0.8, random_state=RANDOM_STATE, n_jobs=1),
+        {'model__n_estimators':     [300, 600],
+         'model__learning_rate':    [0.03, 0.1],
+         'model__max_depth':        [4, 6],
+         'model__colsample_bytree': [0.8, 1.0]}
+    ),
+}
+
+grid_searches = {}   # name -> fitted GridSearchCV (used below to pick the final model)
+tuned_rows = []      # one summary row per tuned model
+
+for name, (model, grid) in param_grids.items():
+    t0 = time.perf_counter()
+    gs = GridSearchCV(make_pipe(model), grid, cv=cv, scoring=SCORING,
+                      return_train_score=True, n_jobs=-1, refit=True)   # refit=True -> best model retrained on ALL training data
+    gs.fit(X, y)
+    grid_searches[name] = gs
+
+    best = gs.best_index_   # row of the best parameter combination in cv_results_
+    tuned_rows.append({
+        'Model':       name + ' (tuned)',
+        'Train_RMSE':  -gs.cv_results_['mean_train_score'][best],
+        'CV_RMSE':     -gs.best_score_,
+        'CV_RMSE_std': gs.cv_results_['std_test_score'][best],
+        'Time_sec':    time.perf_counter() - t0,
+        'Best_params': {k.replace('model__', ''): v for k, v in gs.best_params_.items()},
+    })
+    print(f"{name:24s} best CV RMSE = {-gs.best_score_:8.1f}  ({time.perf_counter() - t0:5.1f}s)  {tuned_rows[-1]['Best_params']}")
+
+# Full comparison table: baseline vs. tuned, sorted by validation RMSE
+comparison_df = (pd.concat([baseline_df.drop(columns='Gap (CV - Train)'), pd.DataFrame(tuned_rows)], ignore_index=True)
+                   .sort_values('CV_RMSE').reset_index(drop=True))
+comparison_df['Gap (CV - Train)'] = comparison_df['CV_RMSE'] - comparison_df['Train_RMSE']   # overfitting indicator
+pd.set_option('display.max_colwidth', 120)
+display(comparison_df.round(1))
+
 best_name = min(grid_searches, key=lambda n: -grid_searches[n].best_score_)
 final_model = grid_searches[best_name].best_estimator_   # already refit on ALL training data (refit=True)
 
