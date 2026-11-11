@@ -14,5 +14,6 @@ The training set target is `price`; `ID` is not used as a predictor. The workflo
 uses shuffled five-fold cross-validation and RMSE. From this directory, run
 `python "FIRST DRAFT MODEL.py"` or open `models/rent_prediction.ipynb`.
 
-Dependencies: Python 3.11+, numpy, pandas, matplotlib, scikit-learn >=1.2, and
-notebook. The script writes its output to this directory's `predictions.csv`.
+Dependencies: Python 3.11+, numpy, pandas, matplotlib, scikit-learn, xgboost,
+notebook, and ipykernel. The script writes its output to this directory's
+`predictions.csv`.

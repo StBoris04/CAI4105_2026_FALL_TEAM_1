@@ -1,8 +1,8 @@
 # CAI4105 Team 1
 
 This repository holds our work for two machine learning challenges. Each
-challenge has its own folder so that data, code, validation results, and
-submissions stay separate.
+challenge has its own folder so data, code, validation results, and submissions
+stay separate.
 
 ## Repository layout
 
@@ -15,8 +15,8 @@ Challenge-specific setup and run instructions are in each folder's README.
 
 ## Challenge 1
 
-The existing rent prediction script and notebook, supplied CSV files, and
-generated `ID,price` submission are in `challenge1/`. Run the script from that
+The rent prediction workflow, training and test data, notebook, archive, and
+existing `ID,price` submission are in `challenge1/`. Run the script from that
 folder with `python "FIRST DRAFT MODEL.py"`.
 
 ## Challenge 2
