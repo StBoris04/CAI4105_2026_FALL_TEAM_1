@@ -264,7 +264,7 @@ best_name = best_row['Model']
 final_model = candidate_models[best_name]
 fit_start = time.perf_counter()
 final_model.fit(X, y)  # Fit the selected model on all labeled rows.
-final_fit_sec = time.perf_counter() - fit_start 
+final_fit_sec = time.perf_counter() - fit_start
 
 print('Final model:   ', best_name)
 if best_name.endswith(' (tuned)'):
@@ -289,24 +289,24 @@ elif hasattr(model_step, 'coef_'):
     top_features = coefs.abs().sort_values(ascending=False).head(5)
 else:
     print(f'{best_name} has no built-in feature_importances_ (use permutation importance during fine-tuning).')
- 
+
 # Model selection justification
 # Printed (not just written in comments) so the reasoning is visible in the output.
 def lookup(model_name):
     """Return the comparison_df row for a model, or None if it was not run."""
     rows = comparison_df[comparison_df['Model'] == model_name]
     return rows.iloc[0] if len(rows) else None
- 
+
 runner_up = comparison_df.iloc[1]
 lin_row   = lookup('Linear Regression')
 tree_row  = lookup('Decision Tree')
 gap       = best_row['CV_RMSE'] - best_row['Train_RMSE']
 base_name = best_name.removesuffix(' (tuned)')
- 
+
 # Model complexity: report the size-related settings the final model actually uses
 size_keys = ['n_estimators', 'max_iter', 'max_depth', 'max_leaf_nodes', 'min_samples_leaf', 'learning_rate']
 size_info = {k: v for k, v in model_step.get_params().items() if k in size_keys and v is not None}
- 
+
 # Interpretability notes
 interpretability_notes = {
     'Linear Regression':      'high: coefficients describe transformed features, although correlated features complicate interpretation',
@@ -317,11 +317,11 @@ interpretability_notes = {
     'Hist Gradient Boost':    'moderate: a sum of many small trees; no built-in importances (use permutation importance)',
     'XGBoost':                'moderate: a sum of many small trees; explained through feature importances',
 }
- 
+
 print('\n' + '=' * 78)
 print(f'MODEL SELECTION JUSTIFICATION: {best_name}')
 print('=' * 78)
- 
+
 print('\n1. Validation performance')
 print(f"   - Lowest 5-fold CV RMSE of all {len(comparison_df)} model versions: "
       f"${best_row['CV_RMSE']:.1f} (+/- {best_row['CV_RMSE_std']:.1f} across folds).")
@@ -333,7 +333,7 @@ if runner_up['CV_RMSE'] - best_row['CV_RMSE'] < best_row['CV_RMSE_std']:
 if lin_row is not None:
     print(f"   - {lin_row['CV_RMSE'] - best_row['CV_RMSE']:.1f} lower than the Linear Regression baseline "
           f"(${lin_row['CV_RMSE']:.1f}).")
- 
+
 print('\n2. Overfitting / underfitting')
 print(f"   - Train RMSE ${best_row['Train_RMSE']:.1f} vs CV RMSE ${best_row['CV_RMSE']:.1f} "
       f"(gap ${gap:.1f}, {gap / best_row['CV_RMSE']:.0%} of CV RMSE).")
@@ -348,7 +348,7 @@ if tree_row is not None and tree_row['Model'] != best_name:
 if lin_row is not None and lin_row['Model'] != best_name:
     print(f"   - Linear Regression underfits (train ${lin_row['Train_RMSE']:.1f} and CV ${lin_row['CV_RMSE']:.1f} "
           f"are close but both high): rent vs. location is not linear.")
- 
+
 print('\n3. Model complexity')
 print(f'   - Settings: {size_info}')
 if isinstance(model_step, (LinearRegression, SGDRegressor)):
@@ -357,21 +357,21 @@ elif isinstance(model_step, DecisionTreeRegressor):
     print(f'   - One tree with {model_step.get_n_leaves()} leaves.')
 else:
     print('   - An ensemble of trees; its added complexity is justified by the lowest validation RMSE.')
- 
+
 print('\n4. Computational requirements')
 print(f"   - Search/CV time for this model: {best_row['Time_sec']:.1f}s; final refit on all {len(X):,} rows: {final_fit_sec:.1f}s.")
 print('   - Prediction on the test set is near-instant, so the cost is acceptable for this dataset size.')
- 
+
 print('\n5. Interpretability')
 print(f"   - {interpretability_notes.get(base_name, 'see feature importances')}.")
 if top_features is not None:
     print('   - Largest feature importance or coefficient magnitudes (not causal effects): ' +
           ', '.join(f"{n.replace('num__', '').replace('cat__', '')} ({v:.2f})" for n, v in top_features.items()))
- 
+
 print('\nConclusion: we expect this model to generalize best to unseen apartments because it has the lowest')
 print('cross-validated RMSE (which already accounts for its overfitting), with acceptable cost and explainability.')
 print('=' * 78 + '\n')
- 
+
 # Generate predictions for the test set
 test_pred = final_model.predict(X_test)
 
@@ -387,7 +387,7 @@ assert len(saved) == len(df_test), 'one prediction per test row'
 assert saved['ID'].equals(df_test['ID']), 'IDs must match challenge1_test.csv (same IDs, same order)'
 assert saved['ID'].is_unique, 'no duplicate IDs'
 assert np.isfinite(saved['price']).all(), 'all predicted prices must be finite'
- 
+
 print(f"Saved predictions.csv: {len(saved)} rows (all {len(df_test)} test IDs), columns {list(saved.columns)}")
 print('Location:', output_path)
 display(saved['price'].describe().round(1).to_frame().T)

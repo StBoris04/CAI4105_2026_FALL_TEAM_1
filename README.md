@@ -1,36 +1,32 @@
-# CAI4105 Team 1 — Apartment Rental Price Prediction
+# CAI4105 Team 1
 
-Predict monthly apartment rent from listing characteristics and location.
+This repository holds our work for two machine learning challenges. Each
+challenge has its own folder so data, code, validation results, and submissions
+stay separate.
 
-## Files
+## Repository layout
 
-- `datasets/challenge1_train.csv`: 7,398 labeled listings with target `price`.
-- `datasets/challenge1_test.csv`: 2,467 listings used only for final predictions.
-- `FIRST DRAFT MODEL.py`: the complete modeling workflow.
-- `models/rent_prediction.ipynb`: the same workflow as a Jupyter notebook.
-- `predictions.csv`: the generated submission with columns `ID` and `price`.
+| Folder | Challenge | Target |
+| --- | --- | --- |
+| [`challenge1/`](challenge1/README.md) | Apartment rent prediction | `price` |
+| [`challenge2/`](challenge2/README.md) | Online shopping purchase prediction | `Revenue` |
 
-`ID` is retained for the submission and never used as a predictor.
+Challenge-specific setup and run instructions are in each folder's README.
 
-## Run
+## Challenge 1
 
-Install Python 3.11 or newer and the required packages:
+The rent prediction workflow, training and test data, notebook, archive, and
+existing `ID,price` submission are in `challenge1/`. Run the script from that
+folder with `python "FIRST DRAFT MODEL.py"`.
 
-```bash
-python -m pip install numpy pandas matplotlib scikit-learn xgboost notebook ipykernel
-```
+## Challenge 2
 
-From any directory, run the script by path, or open the notebook and run all cells:
+The Challenge 2 workspace is prepared under `challenge2/`. When the instructor
+CSV files are available, place `challenge2_train.csv` and `challenge2_test.csv`
+in `challenge2/data/`. These course data files are excluded from Git. The
+modeling workflow will use `Revenue=True` F1 as its primary validation metric,
+compare the required classifiers, tune selected models with Grid Search, and
+write the final `ID,Revenue` submission to `challenge2/submissions/`.
 
-```bash
-python "FIRST DRAFT MODEL.py"
-jupyter notebook models/rent_prediction.ipynb
-```
-
-Both versions read the CSVs from `datasets/` and write `predictions.csv` to the repository root. Grid Search can take several minutes.
-
-## Method
-
-The training data is explored and prepared with apartment-layout features, one-hot encoding of categories, and numeric scaling. The same shuffled five folds and dollar RMSE are used to compare Linear Regression, Decision Tree, Random Forest, Gradient Boosting, and optional SGD, Histogram Gradient Boosting, and XGBoost models. Selected models are tuned with Grid Search. Preprocessing is fit inside each fold's pipeline.
-
-The final model is selected from both baseline and tuned candidates using validation RMSE, then fit on all labeled rows. The workflow prints a comparison table and a justification covering validation performance, overfitting, complexity, computation, and interpretability. It verifies the saved prediction file against every test ID. The selected CV score may be optimistic because the same data guided model selection; hidden test prices are never used.
+See [`challenge2/README.md`](challenge2/README.md) for the full modeling plan
+and setup details.
