@@ -45,3 +45,27 @@ np.random.seed(RANDOM_STATE)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', 250)
 NOTEBOOK_START = time.time()
+
+# 2. Load and inspect
+df_train = pd.read_csv(PROJECT_ROOT / 'data' / 'challenge2_train.csv')
+df_test = pd.read_csv(PROJECT_ROOT / 'data' / 'challenge2_test.csv')  # final predictions only
+TARGET = 'Revenue'
+ID_COLUMN = 'ID'
+
+print('Train shape:', df_train.shape, '| Test shape:', df_test.shape)
+display(df_train.head())
+df_train.info()
+
+# Confirm the two files can use the same feature preparation.
+train_predictors = set(df_train.columns) - {TARGET}
+test_predictors = set(df_test.columns)
+assert train_predictors == test_predictors, 'Train and test predictors must match.'
+assert df_train[ID_COLUMN].is_unique and df_test[ID_COLUMN].is_unique, 'IDs must be unique.'
+print('Predictor schemas match:', train_predictors == test_predictors)
+print('Missing values (train):', df_train.isna().sum().sum())
+print('Missing values (test): ', df_test.isna().sum().sum())
+print('Duplicate rows (train):', df_train.duplicated().sum())
+print('Duplicate rows (test): ', df_test.duplicated().sum())
+
+# Numeric summary, excluding ID because it is an identifier rather than a predictor.
+display(df_train.drop(columns=[ID_COLUMN, TARGET]).describe().T)
