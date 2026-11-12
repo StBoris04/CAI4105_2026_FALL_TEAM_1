@@ -1,15 +1,14 @@
 # Challenge 2: Online shopping purchase prediction
 
 Predict whether a shopping session results in a purchase (`Revenue`). This
-workspace is separate from Challenge 1. Add the instructor-provided files here
-when available:
+workspace is separate from Challenge 1. The supplied datasets are versioned in
+the repository so each teammate can clone the project and reproduce the
+workflow:
 
 - `data/challenge2_train.csv` (labeled training data)
 - `data/challenge2_test.csv` (unlabeled final prediction data)
 
-These CSV files are ignored by Git so the data can be added locally without
-committing course-provided data. Keep the final `submissions/predictions.csv`
-submission in Git.
+Keep the final `submissions/predictions.csv` submission in Git.
 
 ## Modeling plan
 
@@ -32,10 +31,9 @@ Use Python 3.11+ and install the project dependencies:
 python -m pip install numpy pandas scikit-learn matplotlib jupyter
 ```
 
-The modeling entry point will be `src/train.py`; after adding both CSVs, run
-`python src/train.py` from this folder. The workflow will save predictions under
-`submissions/` and validation outputs under `artifacts/`.
+The modeling entry point will be `src/train.py`; run `python src/train.py` from
+this folder. The workflow will save predictions under `submissions/` and
+validation outputs under `artifacts/`.
 
-The code and notebook are intentionally left as a scaffold until the data is
-available, so schema-dependent preprocessing and model comparisons can be based
-on the actual files rather than guessed column types.
+The checked-in data lets the team base schema-dependent preprocessing and model
+comparisons on the actual supplied files.
