@@ -32,6 +32,3 @@ artifacts/
 
 # Jupyter notebook-generated files
 .ipynb_checkpoints/
-
-# Challenge 2 datasets are supplied separately and may be added locally later.
-challenge2/data/*.csv
