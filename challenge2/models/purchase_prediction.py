@@ -185,3 +185,24 @@ for fold, (train_idx, valid_idx) in enumerate(cv.split(X, y), start=1):
 display(pd.DataFrame(fold_summary).round(4))
 print('Primary metric: F1 score for Revenue=True')
 print('Supporting metrics: precision, recall, ROC AUC, average precision, and confusion matrix')
+
+# Helper used for every model so that evaluation is identical across experiments.
+def evaluate_model(name, estimator, X_data=X, y_data=y, stage=''):
+    start = time.time()
+    res = cross_validate(estimator, X_data, y_data, cv=cv, scoring=scoring,
+                         return_train_score=True, n_jobs=N_JOBS)
+    row = {'model': name, 'stage': stage}
+    for m in scoring:
+        row[f'val_{m}'] = res[f'test_{m}'].mean()
+    row['val_f1_std'] = res['test_f1'].std()
+    row['train_f1'] = res['train_f1'].mean()
+    row['f1_gap'] = row['train_f1'] - row['val_f1']
+    row['fit_time_s'] = res['fit_time'].mean()
+    row['total_time_s'] = time.time() - start
+    return row
+
+summary_cols = ['model', 'stage', 'val_f1', 'val_f1_std', 'val_precision', 'val_recall',
+                'val_roc_auc', 'val_average_precision', 'train_f1', 'f1_gap', 'fit_time_s']
+
+# Reference point: a model that never predicts a purchase has F1 = 0 despite ~85% accuracy.
+print('Majority-class accuracy:', round(1 - y.mean(), 4), '| Majority-class F1:', 0.0)
