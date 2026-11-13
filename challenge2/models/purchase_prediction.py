@@ -162,3 +162,26 @@ preprocessor = ColumnTransformer(transformers=[
     ('categorical', categorical_pipeline, categorical_columns),
     ('numeric', numeric_pipeline, numeric_columns),
 ])
+# 4. Shared validation configuration for every model and Grid Search
+cv = StratifiedKFold(n_splits=N_SPLITS, shuffle=True, random_state=RANDOM_STATE)
+scoring = {
+    'f1': make_scorer(f1_score, pos_label=True, zero_division=0),
+    'precision': make_scorer(precision_score, pos_label=True, zero_division=0),
+    'recall': make_scorer(recall_score, pos_label=True, zero_division=0),
+    'roc_auc': 'roc_auc',
+    'average_precision': 'average_precision',
+}
+
+# Verify that every fold retains the class balance before modeling.
+fold_summary = []
+for fold, (train_idx, valid_idx) in enumerate(cv.split(X, y), start=1):
+    fold_summary.append({
+        'fold': fold,
+        'train_rows': len(train_idx),
+        'validation_rows': len(valid_idx),
+        'train_positive_rate': y.iloc[train_idx].mean(),
+        'validation_positive_rate': y.iloc[valid_idx].mean(),
+    })
+display(pd.DataFrame(fold_summary).round(4))
+print('Primary metric: F1 score for Revenue=True')
+print('Supporting metrics: precision, recall, ROC AUC, average precision, and confusion matrix')
