@@ -360,3 +360,39 @@ progress = (baseline_df[['model', 'val_f1']].rename(columns={'val_f1': 'baseline
 ax = progress.plot(kind='barh', figsize=(10, 5), color=['lightgray', 'lightsteelblue', 'steelblue'])
 ax.set_xlabel('Validation F1 (Revenue=True)'); ax.set_title('Validation F1 after each improvement step')
 plt.tight_layout(); plt.show()
+
+# Top tuned models by validation F1 (tree ensembles have well-behaved probabilities for this step)
+top_names = tuned_df.query("model in ['Random Forest', 'Gradient Boosting', 'HistGradientBoosting']")['model'].tolist()
+candidates = {name: grid_results[name].best_estimator_ for name in top_names}
+candidates['Soft-Voting Ensemble'] = make_pipeline(VotingClassifier(
+    estimators=[(n.replace(' ', '_'), grid_results[n].best_estimator_.named_steps['model']) for n in top_names],
+    voting='soft'))
+# Logistic Regression is kept as an interpretable reference
+candidates['Logistic Regression'] = grid_results['Logistic Regression'].best_estimator_
+
+thresholds = np.round(np.arange(0.05, 0.951, 0.005), 3)
+oof_proba, threshold_rows = {}, []
+for name, est in candidates.items():
+    p = cross_val_predict(est, X, y, cv=cv, method='predict_proba', n_jobs=N_JOBS)[:, 1]
+    oof_proba[name] = p
+    f1s = np.array([f1_score(y, p >= t) for t in thresholds])
+    best_t = thresholds[f1s.argmax()]
+    threshold_rows.append({
+        'model': name,
+        'oof_f1_at_0.5': f1_score(y, p >= 0.5),
+        'best_threshold': best_t,
+        'oof_f1_at_best': f1s.max(),
+        'precision_at_best': precision_score(y, p >= best_t),
+        'recall_at_best': recall_score(y, p >= best_t),
+        'roc_auc': roc_auc_score(y, p),
+        'average_precision': average_precision_score(y, p),
+    })
+threshold_df = pd.DataFrame(threshold_rows).sort_values('oof_f1_at_best', ascending=False)
+display(threshold_df.round(4).reset_index(drop=True))
+
+fig, ax = plt.subplots(figsize=(10, 4))
+for name, p in oof_proba.items():
+    ax.plot(thresholds, [f1_score(y, p >= t) for t in thresholds], label=name)
+ax.axvline(0.5, color='gray', ls='--', lw=1)
+ax.set_xlabel('Probability threshold'); ax.set_ylabel('Out-of-fold F1'); ax.set_ylim(0.3, 0.75)
+ax.set_title('F1 vs decision threshold (out-of-fold)'); ax.legend(); plt.tight_layout(); plt.show()
