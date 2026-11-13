@@ -336,3 +336,27 @@ for name, (model, grid) in param_grids.items():
     grid_results[name] = search
     best = {k.replace('model__', ''): v for k, v in search.best_params_.items()}
     print(f'{name:24s} best CV F1 = {search.best_score_:.4f} | {best} | {time.time() - start:.0f}s')
+  # Summarize the best configuration of every grid on all metrics (same folds as the baseline).
+tuned_rows = []
+for name, search in grid_results.items():
+    cvr = search.cv_results_
+    i = search.best_index_
+    row = {'model': name, 'stage': 'tuned (grid search)'}
+    for m in scoring:
+        row[f'val_{m}'] = cvr[f'mean_test_{m}'][i]
+    row['val_f1_std'] = cvr['std_test_f1'][i]
+    row['train_f1'] = cvr['mean_train_f1'][i]
+    row['f1_gap'] = row['train_f1'] - row['val_f1']
+    row['fit_time_s'] = cvr['mean_fit_time'][i]
+    row['best_params'] = {k.replace('model__', ''): v for k, v in search.best_params_.items()}
+    tuned_rows.append(row)
+tuned_df = pd.DataFrame(tuned_rows).sort_values('val_f1', ascending=False)
+display(tuned_df[summary_cols + ['best_params']].round(4).reset_index(drop=True))
+
+progress = (baseline_df[['model', 'val_f1']].rename(columns={'val_f1': 'baseline'})
+            .merge(fe_compare[['model', 'fe_val_f1']].rename(columns={'fe_val_f1': '+ features'}), on='model', how='outer')
+            .merge(tuned_df[['model', 'val_f1']].rename(columns={'val_f1': '+ grid search'}), on='model', how='outer')
+            .set_index('model').sort_values('+ grid search'))
+ax = progress.plot(kind='barh', figsize=(10, 5), color=['lightgray', 'lightsteelblue', 'steelblue'])
+ax.set_xlabel('Validation F1 (Revenue=True)'); ax.set_title('Validation F1 after each improvement step')
+plt.tight_layout(); plt.show()
