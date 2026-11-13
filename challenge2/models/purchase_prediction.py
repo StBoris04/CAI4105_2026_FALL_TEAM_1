@@ -141,3 +141,24 @@ ax.set_xticks(range(len(numeric_raw))); ax.set_xticklabels(numeric_raw, rotation
 ax.set_yticks(range(len(numeric_raw))); ax.set_yticklabels(numeric_raw, fontsize=8)
 plt.colorbar(im, ax=ax, label='Spearman correlation'); ax.set_title('Correlation among numeric predictors')
 plt.tight_layout(); plt.show()
+
+# 3. Prepare predictors and preprocessing. ID is never a model feature.
+X = df_train.drop(columns=[ID_COLUMN, TARGET])
+y = df_train[TARGET].astype(bool)
+X_test = df_test.drop(columns=ID_COLUMN)
+numeric_columns = [col for col in X.columns if col not in categorical_columns]
+print('Categorical columns:', categorical_columns)
+print('Numeric columns:', numeric_columns)
+
+categorical_pipeline = Pipeline(steps=[
+    ('impute', SimpleImputer(strategy='most_frequent')),
+    ('encode', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+])
+numeric_pipeline = Pipeline(steps=[
+    ('impute', SimpleImputer(strategy='median')),
+    ('scale', StandardScaler())
+])
+preprocessor = ColumnTransformer(transformers=[
+    ('categorical', categorical_pipeline, categorical_columns),
+    ('numeric', numeric_pipeline, numeric_columns),
+])
