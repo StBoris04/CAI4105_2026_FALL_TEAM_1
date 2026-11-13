@@ -69,3 +69,20 @@ print('Duplicate rows (test): ', df_test.duplicated().sum())
 
 # Numeric summary, excluding ID because it is an identifier rather than a predictor.
 display(df_train.drop(columns=[ID_COLUMN, TARGET]).describe().T)
+
+# The positive class is uncommon, so accuracy alone would be misleading.
+class_counts = df_train[TARGET].value_counts().rename_axis(TARGET).to_frame('count')
+class_counts['share'] = class_counts['count'] / len(df_train)
+display(class_counts)
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+class_counts['count'].plot(kind='bar', ax=axes[0], color=['steelblue', 'darkorange'])
+axes[0].set_title('Revenue class counts')
+axes[0].set_xlabel('Revenue'); axes[0].set_ylabel('Sessions')
+for label, group in df_train.groupby(TARGET):
+    axes[1].hist(group['PageValues'], bins=40, alpha=0.55, label=f'Revenue={label}')
+axes[1].set_title('PageValues by purchase outcome')
+axes[1].set_xlabel('PageValues'); axes[1].set_ylabel('Sessions')
+axes[1].legend()
+plt.tight_layout()
+plt.show()
