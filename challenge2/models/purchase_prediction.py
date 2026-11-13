@@ -444,6 +444,7 @@ for ax, pred, title in [(axes[0], pred_default, 'threshold 0.50'), (axes[1], pre
     ax.set_title(f'{FINAL_MODEL_NAME}\nout-of-fold, {title} (F1={f1_score(y, pred):.3f})')
 plt.tight_layout(); plt.show()
 
+print('Note: threshold was chosen using these same out-of-fold targets; the report below is exploratory, not an independent score.')
 print(f'Classification report, out-of-fold, threshold {t_final_oof:.3f}:')
 print(classification_report(y, pred_tuned, target_names=['No purchase', 'Purchase'], digits=4))
 
@@ -473,11 +474,13 @@ test_pred = final_model.predict(X_test).astype(bool)
 predictions = pd.DataFrame({ID_COLUMN: df_test[ID_COLUMN], TARGET: test_pred})
 
 # Submission checks
-assert len(predictions) == len(df_test) == 3083
+assert len(df_test) > 0, 'Test dataset is empty.'
+assert len(predictions) == len(df_test)
 assert predictions[ID_COLUMN].is_unique and predictions[ID_COLUMN].equals(df_test[ID_COLUMN])
 assert predictions[TARGET].isin([True, False]).all() and predictions[TARGET].notna().all()
 
-out_path = PROJECT_ROOT / 'predictions.csv'
+out_path = PROJECT_ROOT / 'submissions' / 'predictions.csv'
+out_path.parent.mkdir(parents=True, exist_ok=True)
 predictions.to_csv(out_path, index=False)
 print('Saved', out_path, predictions.shape)
 print(f'Predicted purchase rate on test: {predictions[TARGET].mean():.3f} '
