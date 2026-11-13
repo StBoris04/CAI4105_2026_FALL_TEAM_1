@@ -233,3 +233,29 @@ ax.barh(order['model'], order['train_f1'], color='lightgray', label='Train F1')
 ax.barh(order['model'], order['val_f1'], color='steelblue', label='Validation F1', height=0.5)
 ax.set_xlabel('F1 (Revenue=True)'); ax.set_title('Baseline models: train vs validation F1')
 ax.legend(loc='lower right'); plt.tight_layout(); plt.show()
+
+LOG_COLUMNS = ['Administrative', 'Administrative_Duration', 'Informational', 'Informational_Duration',
+               'ProductRelated', 'ProductRelated_Duration', 'PageValues', 'TotalPages', 'TotalDuration',
+               'AvgDurPerPage', 'ProdDurPerPage', 'PageValuePerProduct']
+
+def add_features(df):
+    # Row-wise feature engineering. Safe to run inside CV because it learns nothing from data.
+    d = df.copy()
+    d['TotalPages'] = d['Administrative'] + d['Informational'] + d['ProductRelated']
+    d['TotalDuration'] = d['Administrative_Duration'] + d['Informational_Duration'] + d['ProductRelated_Duration']
+    d['AvgDurPerPage'] = d['TotalDuration'] / (d['TotalPages'] + 1)
+    d['ProdDurPerPage'] = d['ProductRelated_Duration'] / (d['ProductRelated'] + 1)
+    d['HasPageValue'] = (d['PageValues'] > 0).astype(int)
+    d['PageValuePerProduct'] = d['PageValues'] / (d['ProductRelated'] + 1)
+    d['ProductShare'] = d['ProductRelated'] / (d['TotalPages'] + 1)
+    d[LOG_COLUMNS] = np.log1p(d[LOG_COLUMNS].clip(lower=0))
+    return d
+
+engineered_numeric = [c for c in add_features(X.head()).columns if c not in categorical_columns]
+print('Numeric features after engineering:', len(engineered_numeric))
+print(engineered_numeric)
+
+fe_preprocessor = ColumnTransformer(transformers=[
+    ('categorical', categorical_pipeline, categorical_columns),
+    ('numeric', numeric_pipeline, engineered_numeric),
+])
