@@ -446,3 +446,17 @@ plt.tight_layout(); plt.show()
 
 print(f'Classification report, out-of-fold, threshold {t_final_oof:.3f}:')
 print(classification_report(y, pred_tuned, target_names=['No purchase', 'Purchase'], digits=4))
+
+# Fit on one CV training split and measure the drop in average precision on its validation split.
+train_idx, valid_idx = next(cv.split(X, y))
+imp_model = candidates[FINAL_MODEL_NAME]
+imp_model = sklearn.base.clone(imp_model).fit(X.iloc[train_idx], y.iloc[train_idx])
+perm = permutation_importance(imp_model, X.iloc[valid_idx], y.iloc[valid_idx], scoring='average_precision',
+                              n_repeats=10, random_state=RANDOM_STATE, n_jobs=N_JOBS)
+importance = (pd.DataFrame({'feature': X.columns, 'importance_mean': perm.importances_mean,
+                            'importance_std': perm.importances_std})
+              .sort_values('importance_mean', ascending=True))
+fig, ax = plt.subplots(figsize=(8, 6))
+ax.barh(importance['feature'], importance['importance_mean'], xerr=importance['importance_std'], color='steelblue')
+ax.set_xlabel('Drop in average precision when shuffled'); ax.set_title(f'Permutation importance: {FINAL_MODEL_NAME}')
+plt.tight_layout(); plt.show()
