@@ -206,3 +206,30 @@ summary_cols = ['model', 'stage', 'val_f1', 'val_f1_std', 'val_precision', 'val_
 
 # Reference point: a model that never predicts a purchase has F1 = 0 despite ~85% accuracy.
 print('Majority-class accuracy:', round(1 - y.mean(), 4), '| Majority-class F1:', 0.0)
+
+def required_models():
+    return {
+        'Logistic Regression': LogisticRegression(max_iter=5000, random_state=RANDOM_STATE),
+        'Naive Bayes': GaussianNB(),
+        'K-Nearest Neighbors': KNeighborsClassifier(),
+        'Support Vector Machine': SVC(random_state=RANDOM_STATE),
+        'Decision Tree': DecisionTreeClassifier(random_state=RANDOM_STATE),
+        'Random Forest': RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=1),
+        'Gradient Boosting': GradientBoostingClassifier(random_state=RANDOM_STATE),
+    }
+
+baseline_rows = []
+for name, model in required_models().items():
+    pipe = Pipeline([('preprocess', preprocessor), ('model', model)])
+    baseline_rows.append(evaluate_model(name, pipe, stage='baseline'))
+    print(f"{name:24s} val F1 = {baseline_rows[-1]['val_f1']:.4f}")
+
+baseline_df = pd.DataFrame(baseline_rows)[summary_cols].sort_values('val_f1', ascending=False)
+display(baseline_df.round(4).reset_index(drop=True))
+
+fig, ax = plt.subplots(figsize=(10, 4))
+order = baseline_df.sort_values('val_f1')
+ax.barh(order['model'], order['train_f1'], color='lightgray', label='Train F1')
+ax.barh(order['model'], order['val_f1'], color='steelblue', label='Validation F1', height=0.5)
+ax.set_xlabel('F1 (Revenue=True)'); ax.set_title('Baseline models: train vs validation F1')
+ax.legend(loc='lower right'); plt.tight_layout(); plt.show()
