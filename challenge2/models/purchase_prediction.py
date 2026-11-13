@@ -121,4 +121,15 @@ display(pd.concat({
 }).rename('purchase_rate').to_frame().round(3))
 display(rate_pv.round(3))
 
-
+# Skewness of numeric variables and association with the target
+numeric_raw = ['Administrative', 'Administrative_Duration', 'Informational', 'Informational_Duration',
+               'ProductRelated', 'ProductRelated_Duration', 'BounceRates', 'ExitRates',
+               'PageValues', 'SpecialDay']
+assoc = pd.DataFrame({
+    'skewness': df_train[numeric_raw].skew(),
+    'share_zero': (df_train[numeric_raw] == 0).mean(),
+    'spearman_with_Revenue': df_train[numeric_raw].corrwith(df_train[TARGET].astype(int), method='spearman'),
+    'mean_if_purchase': df_train.loc[df_train[TARGET], numeric_raw].mean(),
+    'mean_if_no_purchase': df_train.loc[~df_train[TARGET], numeric_raw].mean(),
+}).sort_values('spearman_with_Revenue', ascending=False)
+display(assoc.round(3))
