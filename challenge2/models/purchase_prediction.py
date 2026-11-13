@@ -273,3 +273,13 @@ skew_compare = pd.DataFrame({
     'engineered_skew': add_features(X)[numeric_columns].skew(),
 })
 display(skew_compare.round(2))
+
+fe_rows = []
+for name, model in required_models().items():
+    fe_rows.append(evaluate_model(name, make_pipeline(model), stage='feature engineering'))
+
+fe_df = pd.DataFrame(fe_rows)[summary_cols]
+fe_compare = (baseline_df[['model', 'val_f1']].rename(columns={'val_f1': 'baseline_val_f1'})
+              .merge(fe_df[['model', 'val_f1']].rename(columns={'val_f1': 'fe_val_f1'}), on='model'))
+fe_compare['change'] = fe_compare['fe_val_f1'] - fe_compare['baseline_val_f1']
+display(fe_compare.sort_values('fe_val_f1', ascending=False).round(4).reset_index(drop=True))
