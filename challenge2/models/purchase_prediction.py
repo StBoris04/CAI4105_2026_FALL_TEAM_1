@@ -460,3 +460,32 @@ fig, ax = plt.subplots(figsize=(8, 6))
 ax.barh(importance['feature'], importance['importance_mean'], xerr=importance['importance_std'], color='steelblue')
 ax.set_xlabel('Drop in average precision when shuffled'); ax.set_title(f'Permutation importance: {FINAL_MODEL_NAME}')
 plt.tight_layout(); plt.show()
+
+final_model = with_tuned_threshold(candidates[FINAL_MODEL_NAME])
+final_model.fit(X, y)
+print('Final model:', FINAL_MODEL_NAME)
+print('Hyperparameters:', {k.replace('model__', ''): v for k, v in grid_results[FINAL_MODEL_NAME].best_params_.items()}
+      if FINAL_MODEL_NAME in grid_results else 'ensemble of tuned models')
+print(f'Decision threshold chosen on training data: {final_model.best_threshold_:.4f}')
+print(f'Inner-CV F1 at that threshold: {final_model.best_score_:.4f}')
+
+test_pred = final_model.predict(X_test).astype(bool)
+predictions = pd.DataFrame({ID_COLUMN: df_test[ID_COLUMN], TARGET: test_pred})
+
+# Submission checks
+assert len(predictions) == len(df_test) == 3083
+assert predictions[ID_COLUMN].is_unique and predictions[ID_COLUMN].equals(df_test[ID_COLUMN])
+assert predictions[TARGET].isin([True, False]).all() and predictions[TARGET].notna().all()
+
+out_path = PROJECT_ROOT / 'predictions.csv'
+predictions.to_csv(out_path, index=False)
+print('Saved', out_path, predictions.shape)
+print(f'Predicted purchase rate on test: {predictions[TARGET].mean():.3f} '
+      f'(training purchase rate {y.mean():.3f}; OOF predicted rate {pred_tuned.mean():.3f})')
+display(predictions.head())
+display(predictions[TARGET].value_counts())
+
+print('Python      ', platform.python_version())
+for pkg in [np, pd, sklearn, plt.matplotlib]:
+    print(f'{pkg.__name__:12s}', pkg.__version__)
+print(f'Total notebook runtime: {(time.time() - NOTEBOOK_START) / 60:.1f} minutes')
