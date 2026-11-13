@@ -94,4 +94,31 @@ for col in categorical_columns:
     unseen = set(df_test[col].dropna()) - set(df_train[col].dropna())
     print(f'{col}: {df_train[col].nunique()} train levels; unseen test levels: {sorted(unseen)}')
 
+# Purchase rate by key categorical variables
+month_order = ['Feb', 'Mar', 'May', 'June', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+fig, axes = plt.subplots(1, 3, figsize=(16, 4))
+rate_month = df_train.groupby('Month')[TARGET].agg(['mean', 'size']).reindex(month_order)
+axes[0].bar(rate_month.index, rate_month['mean'], color='steelblue')
+axes[0].set_title('Purchase rate by Month'); axes[0].set_ylabel('Share with Revenue=True')
+for i, n in enumerate(rate_month['size']):
+    axes[0].text(i, rate_month['mean'].iloc[i] + 0.005, f'n={n}', ha='center', fontsize=7)
+
+rate_visitor = df_train.groupby('VisitorType')[TARGET].mean().sort_values()
+axes[1].bar(rate_visitor.index, rate_visitor.values, color='darkorange')
+axes[1].set_title('Purchase rate by VisitorType')
+
+has_pv = np.where(df_train['PageValues'] > 0, 'PageValues > 0', 'PageValues = 0')
+rate_pv = df_train.groupby(has_pv)[TARGET].agg(['mean', 'size'])
+axes[2].bar(rate_pv.index, rate_pv['mean'], color='seagreen')
+axes[2].set_title('Purchase rate by PageValues > 0')
+for i, n in enumerate(rate_pv['size']):
+    axes[2].text(i, rate_pv['mean'].iloc[i] + 0.01, f'n={n}', ha='center', fontsize=8)
+plt.tight_layout(); plt.show()
+
+display(pd.concat({
+    'Weekend': df_train.groupby('Weekend')[TARGET].mean(),
+    'SpecialDay>0': df_train.groupby(df_train['SpecialDay'] > 0)[TARGET].mean(),
+}).rename('purchase_rate').to_frame().round(3))
+display(rate_pv.round(3))
+
 
