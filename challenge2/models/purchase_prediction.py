@@ -413,3 +413,57 @@ for name in threshold_df['model'].head(4):
     print(f'{name:22s} nested F1 = {scores.mean():.4f} +/- {scores.std():.4f}')
 nested_df = pd.DataFrame(nested_rows).sort_values('nested_f1_mean', ascending=False).reset_index(drop=True)
 display(nested_df.round(4))
+
+#5.2 Final comparison
+
+param_grids = {
+    'Logistic Regression': (LogisticRegression(max_iter=5000, random_state=RANDOM_STATE), {
+        'model__C': [0.01, 0.03, 0.1, 0.3, 1, 3],
+        'model__class_weight': [None, 'balanced'],
+    }),
+    'Naive Bayes': (GaussianNB(), {
+        'model__var_smoothing': np.logspace(-9, -1, 9),
+    }),
+    'K-Nearest Neighbors': (KNeighborsClassifier(), {
+        'model__n_neighbors': [5, 11, 21, 41],
+        'model__weights': ['uniform', 'distance'],
+        'model__p': [1, 2],
+    }),
+    'Support Vector Machine': (SVC(random_state=RANDOM_STATE), {
+        'model__C': [0.3, 1, 3],
+        'model__gamma': ['scale', 0.01],
+        'model__class_weight': ['balanced'],
+    }),
+    'Decision Tree': (DecisionTreeClassifier(random_state=RANDOM_STATE), {
+        'model__max_depth': [3, 5, 7, 10],
+        'model__min_samples_leaf': [5, 20, 50],
+        'model__class_weight': [None, 'balanced'],
+    }),
+    'Random Forest': (RandomForestClassifier(n_estimators=300, random_state=RANDOM_STATE, n_jobs=1), {
+        'model__max_features': ['sqrt', 0.3],
+        'model__min_samples_leaf': [1, 3, 5, 10],
+        'model__class_weight': [None, 'balanced_subsample'],
+    }),
+    'Gradient Boosting': (GradientBoostingClassifier(subsample=0.8, random_state=RANDOM_STATE), {
+        'model__n_estimators': [150, 300],
+        'model__learning_rate': [0.03, 0.1],
+        'model__max_depth': [2, 3, 4],
+    }),
+    'HistGradientBoosting': (HistGradientBoostingClassifier(max_iter=200, l2_regularization=1.0,
+                                                            random_state=RANDOM_STATE), {
+        'model__learning_rate': [0.03, 0.1],
+        'model__max_leaf_nodes': [15, 31],
+        'model__min_samples_leaf': [20, 50],
+        'model__class_weight': [None, 'balanced'],
+    }),
+}
+
+grid_results = {}
+for name, (model, grid) in param_grids.items():
+    start = time.time()
+    search = GridSearchCV(make_pipeline(model), grid, cv=cv, scoring=scoring, refit='f1',
+                          return_train_score=True, n_jobs=N_JOBS)
+    search.fit(X, y)
+    grid_results[name] = search
+    best = {k.replace('model__', ''): v for k, v in search.best_params_.items()}
+    print(f'{name:24s} best CV F1 = {search.best_score_:.4f} | {best} | {time.time() - start:.0f}s')
