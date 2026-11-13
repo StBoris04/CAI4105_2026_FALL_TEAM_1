@@ -396,3 +396,20 @@ for name, p in oof_proba.items():
 ax.axvline(0.5, color='gray', ls='--', lw=1)
 ax.set_xlabel('Probability threshold'); ax.set_ylabel('Out-of-fold F1'); ax.set_ylim(0.3, 0.75)
 ax.set_title('F1 vs decision threshold (out-of-fold)'); ax.legend(); plt.tight_layout(); plt.show()
+
+inner_cv = StratifiedKFold(n_splits=N_SPLITS, shuffle=True, random_state=RANDOM_STATE + 1)
+
+def with_tuned_threshold(estimator):
+    return TunedThresholdClassifierCV(estimator, scoring='f1', cv=inner_cv,
+                                      thresholds=200, random_state=RANDOM_STATE)
+
+nested_rows = []
+for name in threshold_df['model'].head(4):
+    start = time.time()
+    scores = cross_val_score(with_tuned_threshold(candidates[name]), X, y, cv=cv,
+                             scoring=scoring['f1'], n_jobs=N_JOBS)
+    nested_rows.append({'model': name, 'nested_f1_mean': scores.mean(), 'nested_f1_std': scores.std(),
+                        'fold_scores': np.round(scores, 4), 'time_s': round(time.time() - start)})
+    print(f'{name:22s} nested F1 = {scores.mean():.4f} +/- {scores.std():.4f}')
+nested_df = pd.DataFrame(nested_rows).sort_values('nested_f1_mean', ascending=False).reset_index(drop=True)
+display(nested_df.round(4))
