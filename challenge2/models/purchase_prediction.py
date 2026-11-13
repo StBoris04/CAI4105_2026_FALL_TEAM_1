@@ -133,3 +133,11 @@ assoc = pd.DataFrame({
     'mean_if_no_purchase': df_train.loc[~df_train[TARGET], numeric_raw].mean(),
 }).sort_values('spearman_with_Revenue', ascending=False)
 display(assoc.round(3))
+
+corr = df_train[numeric_raw].corr(method='spearman')
+fig, ax = plt.subplots(figsize=(8, 6))
+im = ax.imshow(corr, cmap='coolwarm', vmin=-1, vmax=1)
+ax.set_xticks(range(len(numeric_raw))); ax.set_xticklabels(numeric_raw, rotation=60, ha='right', fontsize=8)
+ax.set_yticks(range(len(numeric_raw))); ax.set_yticklabels(numeric_raw, fontsize=8)
+plt.colorbar(im, ax=ax, label='Spearman correlation'); ax.set_title('Correlation among numeric predictors')
+plt.tight_layout(); plt.show()
