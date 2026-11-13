@@ -259,3 +259,17 @@ fe_preprocessor = ColumnTransformer(transformers=[
     ('categorical', categorical_pipeline, categorical_columns),
     ('numeric', numeric_pipeline, engineered_numeric),
 ])
+def make_pipeline(model):
+    # Full pipeline: feature engineering -> impute/encode/scale -> model.
+    return Pipeline([
+        ('features', FunctionTransformer(add_features, validate=False)),
+        ('preprocess', fe_preprocessor),
+        ('model', model),
+    ])
+
+# Effect of the log transform on skewness
+skew_compare = pd.DataFrame({
+    'raw_skew': X[numeric_columns].skew(),
+    'engineered_skew': add_features(X)[numeric_columns].skew(),
+})
+display(skew_compare.round(2))
