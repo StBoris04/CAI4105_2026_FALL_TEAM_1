@@ -86,3 +86,12 @@ axes[1].set_xlabel('PageValues'); axes[1].set_ylabel('Sessions')
 axes[1].legend()
 plt.tight_layout()
 plt.show()
+
+# Check categorical levels and ensure the test set has no unseen values.
+categorical_columns = ['Month', 'OperatingSystems', 'Browser', 'Region',
+                       'TrafficType', 'VisitorType', 'Weekend']
+for col in categorical_columns:
+    unseen = set(df_test[col].dropna()) - set(df_train[col].dropna())
+    print(f'{col}: {df_train[col].nunique()} train levels; unseen test levels: {sorted(unseen)}')
+
+
