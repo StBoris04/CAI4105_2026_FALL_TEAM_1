@@ -184,9 +184,13 @@ def main():
     arg = argparse.ArgumentParser(description=__doc__)
     arg.add_argument('--mode', choices=['quick', 'full'], default='quick')
     arg.add_argument('--outer-folds', type=int, default=3)
+    arg.add_argument('--only-fold', type=int, default=None,
+                     help='Run only this outer fold (1 through --outer-folds); useful for full grids.')
     args = arg.parse_args()
     if args.outer_folds < 2:
         arg.error('--outer-folds must be at least 2')
+    if args.only_fold is not None and not (1 <= args.only_fold <= args.outer_folds):
+        arg.error('--only-fold must be between 1 and --outer-folds')
 
     path = locate_data()
     data = pd.read_csv(path).dropna(subset=['Revenue'])
@@ -213,10 +217,15 @@ def main():
           else 'Full mode uses the original team hyperparameter grids.', flush=True)
     print('All selection happens within each outer training fold.', flush=True)
     print('The hidden test dataset is never read and no submission is generated.', flush=True)
-    print('The team source file is not executed or modified.\n', flush=True)
+    print('The team source file is not executed or modified.', flush=True)
+    if args.only_fold is not None:
+        print(f'Running only outer fold {args.only_fold}/{args.outer_folds}; results are PARTIAL.', flush=True)
+    print('', flush=True)
 
     rows = []
     for outer_index, (tr_idx, va_idx) in enumerate(outer_cv.split(X, y), 1):
+        if args.only_fold is not None and outer_index != args.only_fold:
+            continue
         Xtr, ytr = X.iloc[tr_idx], y.iloc[tr_idx]
         Xva, yva = X.iloc[va_idx], y.iloc[va_idx]
         inner_cv = StratifiedKFold(n_splits=inner_folds, shuffle=True,
@@ -272,11 +281,14 @@ def main():
           .mean().round(4).to_dict(), flush=True)
     print('The folds are new for the script, but the dataset has already been explored;',
           'these are exploratory results, not independent final proof.', flush=True)
-    print('Model selection tested all five candidates on each outer-training fold.', flush=True)
+    print('Model selection tested all five candidates on each evaluated outer-training fold.', flush=True)
+    if args.only_fold is not None:
+        print('PARTIAL RESULT: do not report this fold as the full cross-validation mean.', flush=True)
     print('Do NOT compare this mean F1 directly with earlier scores from other splits.',
           flush=True)
 
-    out_path = Path(__file__).resolve().parent / f'team_pipeline_audit_{args.mode}_results.csv'
+    suffix = f'_fold{args.only_fold}' if args.only_fold is not None else ''
+    out_path = Path(__file__).resolve().parent / f'team_pipeline_audit_{args.mode}{suffix}_results.csv'
     result.to_csv(out_path, index=False)
     print('Saved:', out_path, flush=True)
 
