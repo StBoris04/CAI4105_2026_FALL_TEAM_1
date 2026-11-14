@@ -1,9 +1,14 @@
-"""Archived standalone implementation of the Challenge 2 workflow.
+"""Archived standalone implementation — do not use for the final project.
 
-Use ``purchase_prediction.ipynb`` as the single source of truth. The notebook
-contains the reviewed Tasks 1–6 sequence and keeps the test CSV held out until
-final prediction generation. This script remains only as a historical source
-for the refactor and should not be run for the final project.
+Known issues:
+* Reads and inspects ``challenge2_test.csv`` during Tasks 1–2 instead of only
+  in Task 6, violating the required test-data holdout.
+* Duplicates the notebook workflow, allowing the two implementations to drift.
+* Selects models and decision thresholds using reused validation information,
+  so its winning F1 is not an independent generalization estimate.
+* Previously wrote predictions outside the documented ``submissions/`` path.
+
+The canonical, reviewed workflow is ``purchase_prediction.ipynb``.
 """
 
 # 1. Import packages

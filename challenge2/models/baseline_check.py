@@ -1,9 +1,12 @@
-"""Archived baseline scratch check.
+"""Archived baseline scratch check — do not use for the final project.
 
-The canonical Challenge 2 workflow is ``purchase_prediction.ipynb``. Do not
-use this file for model selection or submission: it uses a separate holdout
-split and reads the test CSV before Task 6, which conflicts with the project
-validation rules. It is retained only as historical reference.
+Known issues:
+* Reads and validates ``challenge2_test.csv`` before Task 6, violating the
+  requirement to reserve test data for final predictions only.
+* Uses one stratified 80/20 holdout instead of the team's shared stratified
+  five-fold cross-validation, so its F1 cannot be compared with final results.
+* Duplicates the Logistic Regression baseline that belongs in the canonical
+  ``purchase_prediction.ipynb`` seven-model comparison.
 """
 
 from pathlib import Path
