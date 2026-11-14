@@ -1,3 +1,14 @@
+"""Archived baseline scratch check — do not use for the final project.
+
+Known issues:
+* Reads and validates ``challenge2_test.csv`` before Task 6, violating the
+  requirement to reserve test data for final predictions only.
+* Uses one stratified 80/20 holdout instead of the team's shared stratified
+  five-fold cross-validation, so its F1 cannot be compared with final results.
+* Duplicates the Logistic Regression baseline that belongs in the canonical
+  ``purchase_prediction.ipynb`` seven-model comparison.
+"""
+
 from pathlib import Path
 
 import pandas as pd
