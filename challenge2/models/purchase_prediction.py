@@ -1,3 +1,16 @@
+"""Archived standalone implementation — do not use for the final project.
+
+Known issues:
+* Reads and inspects ``challenge2_test.csv`` during Tasks 1–2 instead of only
+  in Task 6, violating the required test-data holdout.
+* Duplicates the notebook workflow, allowing the two implementations to drift.
+* Selects models and decision thresholds using reused validation information,
+  so its winning F1 is not an independent generalization estimate.
+* Previously wrote predictions outside the documented ``submissions/`` path.
+
+The canonical, reviewed workflow is ``purchase_prediction.ipynb``.
+"""
+
 # 1. Import packages
 from IPython.display import display
 from pathlib import Path
