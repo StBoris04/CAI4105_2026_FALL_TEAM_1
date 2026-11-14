@@ -403,33 +403,44 @@ def with_tuned_threshold(estimator):
     return TunedThresholdClassifierCV(estimator, scoring='f1', cv=inner_cv,
                                       thresholds=200, random_state=RANDOM_STATE)
 
-nested_rows = []
-for name in threshold_df['model'].head(4):
+# Do not prefilter candidates using threshold_df: its thresholds were selected
+# against these same OOF targets, so a top-four cutoff could exclude a contender.
+# Score all five candidate recipes instead. This still is NOT a fully nested
+# estimate: each candidate's hyperparameters were tuned on the full dataset above.
+print('Evaluating threshold tuning for all candidates:', ', '.join(candidates))
+print('Note: globally selected hyperparameters mean these are post-tuning CV')
+print('diagnostics, not an independent estimate of final F1 performance.')
+post_tuning_rows = []
+for name, estimator in candidates.items():
     start = time.time()
-    scores = cross_val_score(with_tuned_threshold(candidates[name]), X, y, cv=cv,
+    scores = cross_val_score(with_tuned_threshold(estimator), X, y, cv=cv,
                              scoring=scoring['f1'], n_jobs=N_JOBS)
-    nested_rows.append({'model': name, 'nested_f1_mean': scores.mean(), 'nested_f1_std': scores.std(),
-                        'fold_scores': np.round(scores, 4), 'time_s': round(time.time() - start)})
-    print(f'{name:22s} nested F1 = {scores.mean():.4f} +/- {scores.std():.4f}')
-nested_df = pd.DataFrame(nested_rows).sort_values('nested_f1_mean', ascending=False).reset_index(drop=True)
-display(nested_df.round(4))
+    post_tuning_rows.append({'model': name, 'post_tuning_cv_f1': scores.mean(),
+                             'post_tuning_cv_std': scores.std(),
+                             'fold_scores': np.round(scores, 4),
+                             'time_s': round(time.time() - start)})
+    print(f'{name:22s} post-tuning CV F1 = {scores.mean():.4f} +/- {scores.std():.4f}')
+post_tuning_df = (pd.DataFrame(post_tuning_rows)
+                  .sort_values('post_tuning_cv_f1', ascending=False)
+                  .reset_index(drop=True))
+display(post_tuning_df.round(4))
 
 #5.2 Final comparison table
 
 final_table = (tuned_df[['model', 'val_f1', 'train_f1', 'f1_gap', 'val_roc_auc', 'val_average_precision', 'fit_time_s']]
                .rename(columns={'val_f1': 'tuned_f1@0.5'})
                .merge(threshold_df[['model', 'best_threshold', 'oof_f1_at_best']], on='model', how='outer')
-               .merge(nested_df[['model', 'nested_f1_mean', 'nested_f1_std']], on='model', how='left')
-               .sort_values(['nested_f1_mean', 'oof_f1_at_best', 'tuned_f1@0.5'], ascending=False, na_position='last')
+               .merge(post_tuning_df[['model', 'post_tuning_cv_f1', 'post_tuning_cv_std']], on='model', how='left')
+               .sort_values(['post_tuning_cv_f1', 'oof_f1_at_best', 'tuned_f1@0.5'], ascending=False, na_position='last')
                .reset_index(drop=True))
 display(final_table.round(4))
 
-FINAL_MODEL_NAME = nested_df.iloc[0]['model']
+FINAL_MODEL_NAME = post_tuning_df.iloc[0]['model']
 # Prefer a single model over the ensemble when the ensemble's advantage is within noise
-single = nested_df[nested_df['model'] != 'Soft-Voting Ensemble'].iloc[0]
+single = post_tuning_df[post_tuning_df['model'] != 'Soft-Voting Ensemble'].iloc[0]
 if FINAL_MODEL_NAME == 'Soft-Voting Ensemble':
-    gap = nested_df.iloc[0]['nested_f1_mean'] - single['nested_f1_mean']
-    if gap < nested_df.iloc[0]['nested_f1_std'] / 2:
+    gap = post_tuning_df.iloc[0]['post_tuning_cv_f1'] - single['post_tuning_cv_f1']
+    if gap < post_tuning_df.iloc[0]['post_tuning_cv_std'] / 2:
         FINAL_MODEL_NAME = single['model']
 print('Selected final model:', FINAL_MODEL_NAME)
 
