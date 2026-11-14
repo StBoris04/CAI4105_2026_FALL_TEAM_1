@@ -1,3 +1,11 @@
+"""Archived standalone implementation of the Challenge 2 workflow.
+
+Use ``purchase_prediction.ipynb`` as the single source of truth. The notebook
+contains the reviewed Tasks 1–6 sequence and keeps the test CSV held out until
+final prediction generation. This script remains only as a historical source
+for the refactor and should not be run for the final project.
+"""
+
 # 1. Import packages
 from IPython.display import display
 from pathlib import Path

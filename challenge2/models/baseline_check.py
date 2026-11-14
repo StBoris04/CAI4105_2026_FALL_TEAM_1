@@ -1,3 +1,11 @@
+"""Archived baseline scratch check.
+
+The canonical Challenge 2 workflow is ``purchase_prediction.ipynb``. Do not
+use this file for model selection or submission: it uses a separate holdout
+split and reads the test CSV before Task 6, which conflicts with the project
+validation rules. It is retained only as historical reference.
+"""
+
 from pathlib import Path
 
 import pandas as pd
