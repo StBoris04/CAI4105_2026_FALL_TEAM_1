@@ -35,8 +35,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (average_precision_score, f1_score, precision_score,
                              recall_score, roc_auc_score)
 from sklearn.model_selection import (GridSearchCV, StratifiedKFold,
-                                     TunedThresholdClassifierCV, cross_val_predict,
-                                     cross_val_score)
+                                     TunedThresholdClassifierCV, cross_val_score)
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
@@ -129,21 +128,19 @@ def team_pipe(name, model, X):
     return result.set_params(model=clone(model))
 
 
-def oof_best_threshold(estimator, X, y, cv, thresholds):
-    prob = cross_val_predict(estimator, X, y, cv=cv,
-                             method='predict_proba', n_jobs=1)[:, 1]
-    scores = np.array([f1_score(y, prob >= t, zero_division=0)
-                       for t in thresholds])
-    ix = int(np.argmax(scores))
-    return float(thresholds[ix]), float(scores[ix])
-
-
 def choose_team_candidate(fitted, Xtrain, ytrain, inner_cv, thresholds,
                           threshold_cv_folds):
-    """Mirror the team's RF/GB/HGB ensemble + logistic candidate shortlist.
+    """Select among ALL five candidates using only outer-training examples.
 
-    Uses the team's OOF threshold ranking to find the top 4 candidate models,
-    then nested threshold CV *within outer training* to choose the winner.
+    Keep the existing signature because compare_fixed_vs_auto.py and
+    consolidated_pipeline_validation.py already import this function.
+
+    The passed GridSearchCV objects were tuned within the outer training fold.
+    Candidate comparison also happens within that fold; then the caller
+    evaluates the winner on the untouched outer validation fold.
+
+    Candidate CV scores are selection diagnostics, not independent estimates:
+    the hyperparameters were selected from these same outer-training rows.
     """
     base_names = ['Random Forest', 'Gradient Boosting', 'HistGradientBoosting']
     votes = VotingClassifier(
@@ -156,33 +153,32 @@ def choose_team_candidate(fitted, Xtrain, ytrain, inner_cv, thresholds,
     options['Logistic Regression'] = clone(
         fitted['Logistic Regression'].best_estimator_)
 
-    ranking = []
+    # Do not prefilter using thresholds fitted against these same training
+    # targets. Every candidate receives the same inner selection procedure.
+    selection_cv = StratifiedKFold(
+        n_splits=threshold_cv_folds, shuffle=True, random_state=SEED + 17)
+    candidate_cv = []
     for name, estimator in options.items():
-        threshold, score = oof_best_threshold(estimator, Xtrain, ytrain,
-                                              inner_cv, thresholds)
-        ranking.append((name, threshold, score))
-    ranking.sort(key=lambda item: item[2], reverse=True)
-    selected_names = [name for name, _, _ in ranking[:4]]
-
-    nested_cv = StratifiedKFold(n_splits=threshold_cv_folds, shuffle=True,
-                                random_state=SEED + 17)
-    nested = []
-    for name in selected_names:
         threshold_estimator = TunedThresholdClassifierCV(
-            clone(options[name]), scoring='f1', cv=threshold_cv_folds,
+            clone(estimator), scoring='f1', cv=threshold_cv_folds,
             thresholds=80, n_jobs=1)
-        scores = cross_val_score(threshold_estimator, Xtrain, ytrain,
-                                 cv=nested_cv, scoring='f1', n_jobs=1)
-        nested.append((name, float(np.mean(scores)), float(np.std(scores))))
-    nested.sort(key=lambda item: item[1], reverse=True)
-    winner = nested[0][0]
-    # Same preference for a single model as the team's original script.
-    if winner == 'Soft-Voting Ensemble':
-        singles = [row for row in nested if row[0] != 'Soft-Voting Ensemble']
-        if singles and nested[0][1] - singles[0][1] < nested[0][2] / 2:
-            winner = singles[0][0]
-    return winner, options[winner], ranking, nested
+        scores = cross_val_score(
+            threshold_estimator, Xtrain, ytrain, cv=selection_cv,
+            scoring='f1', n_jobs=1, error_score='raise')
+        candidate_cv.append((name, float(np.mean(scores)), float(np.std(scores))))
+    candidate_cv.sort(key=lambda item: item[1], reverse=True)
 
+    winner = candidate_cv[0][0]
+    # Keep the team's rule favoring a simpler model if the ensemble advantage
+    # is smaller than half its observed candidate-CV standard deviation.
+    if winner == 'Soft-Voting Ensemble':
+        singles = [row for row in candidate_cv if row[0] != 'Soft-Voting Ensemble']
+        if singles and candidate_cv[0][1] - singles[0][1] < candidate_cv[0][2] / 2:
+            winner = singles[0][0]
+
+    # Third return value is retained for compatibility with other scripts.
+    ranking = [(name, score) for name, score, _ in candidate_cv]
+    return winner, options[winner], ranking, candidate_cv
 
 def main():
     arg = argparse.ArgumentParser(description=__doc__)
@@ -254,15 +250,16 @@ def main():
             'average_precision': average_precision_score(yva, prob),
             'roc_auc': roc_auc_score(yva, prob),
             'threshold': float(final.best_threshold_),
-            'nested_selection_score': next(s[1] for s in nested if s[0] == selected),
-            'inner_candidate_ranking': json.dumps(ranking),
-            'nested_candidate_scores': json.dumps(nested),
+            'selection_cv_f1': next(s[1] for s in nested if s[0] == selected),
+            'candidate_selection_ranking': json.dumps(ranking),
+            'candidate_selection_cv_scores': json.dumps(nested),
             'best_grids': json.dumps({name: {k: (v.item() if isinstance(v, np.generic) else v)
                                                   for k,v in search.best_params_.items()}
                                       for name, search in fits.items()}, sort_keys=True),
             'mode': args.mode,
         }
         rows.append(row)
+        print('    candidate CV:', ', '.join(f'{n}={score:.4f}' for n, score, _ in nested), flush=True)
         print(f"  -> selected {selected} | OUTER F1={row['f1']:.4f}, "
               f"P={row['precision']:.4f}, R={row['recall']:.4f}, "
               f"threshold={row['threshold']:.3f} | {time.time()-start:.0f}s\n", flush=True)
@@ -275,6 +272,7 @@ def main():
           .mean().round(4).to_dict(), flush=True)
     print('The folds are new for the script, but the dataset has already been explored;',
           'these are exploratory results, not independent final proof.', flush=True)
+    print('Model selection tested all five candidates on each outer-training fold.', flush=True)
     print('Do NOT compare this mean F1 directly with earlier scores from other splits.',
           flush=True)
 
