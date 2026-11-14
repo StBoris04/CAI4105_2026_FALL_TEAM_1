@@ -31,9 +31,14 @@ Use Python 3.11+ and install the project dependencies:
 python -m pip install numpy pandas scikit-learn matplotlib jupyter
 ```
 
-The modeling entry point will be `src/train.py`; run `python src/train.py` from
-this folder. The workflow will save predictions under `submissions/` and
-validation outputs under `artifacts/`.
+The canonical modeling workflow is
+`models/purchase_prediction.ipynb`. Open the notebook from this folder and run
+its cells from top to bottom:
 
-The checked-in data lets the team base schema-dependent preprocessing and model
-comparisons on the actual supplied files.
+```bash
+jupyter notebook models/purchase_prediction.ipynb
+```
+
+Tasks 1–5 use only `challenge2_train.csv` for exploration, validation, feature
+engineering, tuning, and final-model selection. Task 6 then loads the test CSV
+only to create `submissions/predictions.csv`.
