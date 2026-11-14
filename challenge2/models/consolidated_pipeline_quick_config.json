@@ -1,0 +1,20 @@
+{
+  "timestamp_utc": "2026-11-14T00:05:18+00:00",
+  "mode": "quick",
+  "outer_folds": 3,
+  "inner_folds": 2,
+  "training_rows": 9247,
+  "positive_rate": 0.15475289283010707,
+  "train_sha256": "c93858d38b60a8924f420b52280971d41f120af2d44dc64f5997df3bba0d3d51",
+  "python": "3.11.9",
+  "sklearn": "1.5.2",
+  "pandas": "2.2.3",
+  "models": [
+    "Random Forest",
+    "Gradient Boosting",
+    "HistGradientBoosting",
+    "Logistic Regression"
+  ],
+  "random_state_outer": 2027,
+  "note": "Exploratory only. Dataset and recipes already investigated."
+}
