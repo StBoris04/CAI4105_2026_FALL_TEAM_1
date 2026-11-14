@@ -184,6 +184,8 @@ def main():
     arg = argparse.ArgumentParser(description=__doc__)
     arg.add_argument('--mode', choices=['quick', 'full'], default='quick')
     arg.add_argument('--outer-folds', type=int, default=3)
+    arg.add_argument('--grid-jobs', type=int, choices=[1, 2], default=1,
+                     help='Concurrent grid-search fits; start with 2 only after a quick-mode test.')
     arg.add_argument('--only-fold', type=int, default=None,
                      help='Run only this outer fold (1 through --outer-folds); useful for full grids.')
     args = arg.parse_args()
@@ -213,6 +215,7 @@ def main():
           f'{y.mean():.1%}', flush=True)
     print('Outer folds:', args.outer_folds, '| inner folds:', inner_folds,
           '| models tuned:', ', '.join(specs), flush=True)
+    print('Grid-search parallel jobs:', args.grid_jobs, flush=True)
     print('Quick mode is an approximation, not the complete team grid.' if args.mode == 'quick'
           else 'Full mode uses the original team hyperparameter grids.', flush=True)
     print('All selection happens within each outer training fold.', flush=True)
@@ -235,15 +238,19 @@ def main():
         fits = {}
         start = time.time()
         for name, (model, grid) in specs.items():
+            model_start = time.time()
             search = GridSearchCV(
                 team_pipe(name, model, Xtr), grid, scoring='f1',
-                cv=inner_cv, refit=True, n_jobs=1, error_score='raise',
+                cv=inner_cv, refit=True, n_jobs=args.grid_jobs, error_score='raise',
             )
             search.fit(Xtr, ytr)
             fits[name] = search
-            print(f'    tuned {name:23s} inner F1={search.best_score_:.4f}', flush=True)
+            print(f'    tuned {name:23s} inner F1={search.best_score_:.4f}'
+                  f' | {time.time()-model_start:.0f}s', flush=True)
+        selection_start = time.time()
         selected, estimator, ranking, nested = choose_team_candidate(
             fits, Xtr, ytr, inner_cv, thresholds, selection_folds)
+        print(f'    candidate comparison completed in {time.time()-selection_start:.0f}s', flush=True)
         final = TunedThresholdClassifierCV(clone(estimator), scoring='f1',
                                            cv=inner_cv, thresholds=100,
                                            n_jobs=1)
