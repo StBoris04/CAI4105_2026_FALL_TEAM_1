@@ -1,0 +1,7 @@
+fold,features,f1,precision,recall,average_precision,threshold,inner_cv_f1_at_0_5,training_oof_f1_at_threshold,best_params,mode
+1,Team features,0.6867030965391621,0.607085346215781,0.790356394129979,0.7507918310943266,0.3,0.6692902740311338,0.6852444038373686,"{""model__class_weight"": null, ""model__max_features"": 0.3, ""model__min_samples_leaf"": 3}",quick
+1,New features,0.6802480070859167,0.588957055214724,0.8050314465408805,0.7468723333553903,0.275,0.6655965997265622,0.682468694096601,"{""model__class_weight"": null, ""model__max_features"": ""sqrt"", ""model__min_samples_leaf"": 1}",quick
+2,Team features,0.6774847870182555,0.656188605108055,0.70020964360587,0.7425290311080772,0.375,0.666537372483612,0.6898608349900597,"{""model__class_weight"": null, ""model__max_features"": 0.3, ""model__min_samples_leaf"": 3}",quick
+2,New features,0.6817288801571709,0.6414048059149723,0.7274633123689728,0.7495063864803686,0.35,0.6707152766494606,0.6901204819277108,"{""model__class_weight"": null, ""model__max_features"": 0.3, ""model__min_samples_leaf"": 3}",quick
+3,Team features,0.6876687668766877,0.6025236593059937,0.80083857442348,0.7543877079732602,0.275,0.6432710668327106,0.6813483146067416,"{""model__class_weight"": null, ""model__max_features"": ""sqrt"", ""model__min_samples_leaf"": 3}",quick
+3,New features,0.6877828054298643,0.6050955414012739,0.7966457023060797,0.7425842776739652,0.3,0.6422199096066296,0.6708240534521158,"{""model__class_weight"": null, ""model__max_features"": 0.3, ""model__min_samples_leaf"": 1}",quick
