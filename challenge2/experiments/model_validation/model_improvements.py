@@ -49,7 +49,7 @@ def locate_training_file():
             return candidate
     raise FileNotFoundError(
         "Can't find challenge2_train.csv. Expected it inside challenge2/data/. "
-        "Make sure you placed this script in challenge2/models/."
+        "Make sure you placed this script in challenge2/experiments/model_validation/."
     )
 
 

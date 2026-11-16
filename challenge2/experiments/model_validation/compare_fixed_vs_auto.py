@@ -1,9 +1,9 @@
 """Matched outer-fold comparison of fixed models vs automatic team selection.
 
 Save alongside team_pipeline_audit.py and compare_team_features.py in
-challenge2/models/. Run using Python 3.11 / scikit-learn >= 1.5:
+challenge2/experiments/model_validation/. Run using Python 3.11 / scikit-learn >= 1.5:
 
-    python challenge2/models/compare_fixed_vs_auto.py --mode quick
+    python challenge2/experiments/model_validation/compare_fixed_vs_auto.py --mode quick
 
 Each approach uses IDENTICAL outer validation folds. Model hyperparameters,
 thresholds, and automatic model choice are determined using outer-TRAINING

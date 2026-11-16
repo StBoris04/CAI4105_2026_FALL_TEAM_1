@@ -1,14 +1,14 @@
 """Compare tuned Random Forests on team vs proposed feature engineering.
 
-Put this script beside compare_team_features.py in challenge2/models/.
+Put this script beside compare_team_features.py in challenge2/experiments/model_validation/.
 Uses challenge2_train.csv only; never reads challenge2_test.csv.
 Compatible with Python 3.11 and scikit-learn 1.5.2.
 
 Run a smaller exploratory comparison first:
-    python challenge2/models/tuned_random_forest_comparison.py --mode quick
+    python challenge2/experiments/model_validation/tuned_random_forest_comparison.py --mode quick
 
 Optionally use the team's exact Random Forest hyperparameter grid (slower):
-    python challenge2/models/tuned_random_forest_comparison.py --mode full
+    python challenge2/experiments/model_validation/tuned_random_forest_comparison.py --mode full
 
 Each OUTER validation fold is excluded from all hyperparameter and threshold
 selection. Results are exploratory because these feature sets were previously

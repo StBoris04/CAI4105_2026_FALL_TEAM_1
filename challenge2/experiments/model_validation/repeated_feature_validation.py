@@ -1,6 +1,6 @@
 """Repeated cross-validation comparing the team's vs proposed feature engineering.
 
-Put this file alongside compare_team_features.py in challenge2/models/.
+Put this file alongside compare_team_features.py in challenge2/experiments/model_validation/.
 Run using the same Python 3.11 virtual environment you used previously.
 
 This script imports only helper functions from compare_team_features.py.

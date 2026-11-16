@@ -1,14 +1,14 @@
 """Audit the team's Challenge 2 model-SELECTION workflow with outer validation.
 
-Put this file in challenge2/models/ beside compare_team_features.py.
+Put this file in challenge2/experiments/model_validation/ beside compare_team_features.py.
 Python 3.11 + scikit-learn 1.5.2 compatible.
 
 Run a *small* version of the team's selection workflow first:
-    python challenge2/models/team_pipeline_audit.py --mode quick
+    python challenge2/experiments/model_validation/team_pipeline_audit.py --mode quick
 
 Full mode uses the team's 8 original hyperparameter grids and a 5-fold
 inner search. It may be extremely compute-intensive:
-    python challenge2/models/team_pipeline_audit.py --mode full
+    python challenge2/experiments/model_validation/team_pipeline_audit.py --mode full
 
 The workflow selects hyperparameters, candidate models, and prediction
 thresholds WITHOUT access to each outer validation fold. It uses only

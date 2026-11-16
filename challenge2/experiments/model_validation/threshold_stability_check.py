@@ -1,9 +1,9 @@
 """Challenge 2: evaluate decision-threshold stability using training-only CV.
 
-Save in challenge2/models/ beside compare_team_features.py and
+Save in challenge2/experiments/model_validation/ beside compare_team_features.py and
 team_pipeline_audit.py. From the cloned repository's root, run:
 
-    python challenge2/models/threshold_stability_check.py --mode quick
+    python challenge2/experiments/model_validation/threshold_stability_check.py --mode quick
 
 This experiment isolates THRESHOLD choice: both predictions on each outer
 validation fold come from the EXACT SAME fitted model. It compares the default

@@ -2,7 +2,7 @@
 
 **Project:** CAI4105 Fall 2026, Team 1  
 **Experiment:** Nested outer-fold audit of the purchase (`Revenue=True`) classifier  
-**Source:** `challenge2/models/team_pipeline_audit.py`  
+**Source:** `challenge2/experiments/model_validation/team_pipeline_audit.py`
 **Status:** Three of three full-mode outer folds completed; exploratory results
 
 ## Executive summary
@@ -49,16 +49,16 @@ Full mode scored higher on these three matched splits, but the observed differen
 From the root of the cloned repository, using an environment with the required Python packages:
 
 ```powershell
-python .\challenge2\models\team_pipeline_audit.py --mode full --outer-folds 3 --only-fold 1
-python .\challenge2\models\team_pipeline_audit.py --mode full --outer-folds 3 --only-fold 2
-python .\challenge2\models\team_pipeline_audit.py --mode full --outer-folds 3 --only-fold 3 --grid-jobs 2
+python .\challenge2\experiments\model_validation\team_pipeline_audit.py --mode full --outer-folds 3 --only-fold 1
+python .\challenge2\experiments\model_validation\team_pipeline_audit.py --mode full --outer-folds 3 --only-fold 2
+python .\challenge2\experiments\model_validation\team_pipeline_audit.py --mode full --outer-folds 3 --only-fold 3 --grid-jobs 2
 ```
 
 Saved fold files:
 
-- `challenge2/models/team_pipeline_audit_full_fold1_results.csv`
-- `challenge2/models/team_pipeline_audit_full_fold2_results.csv`
-- `challenge2/models/team_pipeline_audit_full_fold3_results.csv`
+- `challenge2/experiments/model_validation/team_pipeline_audit_full_fold1_results.csv`
+- `challenge2/experiments/model_validation/team_pipeline_audit_full_fold2_results.csv`
+- `challenge2/experiments/model_validation/team_pipeline_audit_full_fold3_results.csv`
 
 ## Interpretation and limitations
 

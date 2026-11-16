@@ -1,9 +1,9 @@
 """Challenge 2: nested comparison of equal versus training-selected ensemble weights.
 
 Put this alongside compare_team_features.py and team_pipeline_audit.py inside
-challenge2/models/; run from anywhere:
+challenge2/experiments/model_validation/; run from anywhere:
 
-    python challenge2/models/ensemble_weight_experiment.py --mode quick
+    python challenge2/experiments/model_validation/ensemble_weight_experiment.py --mode quick
 
 The team feature recipe and three candidate learners remain unchanged. Only the
 soft-voting weights are compared. Each outer validation fold is held aside while
