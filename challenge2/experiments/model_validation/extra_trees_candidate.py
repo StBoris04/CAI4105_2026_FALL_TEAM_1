@@ -1,9 +1,9 @@
 """Challenge 2: evaluate Extra Trees as an additional model candidate.
 
-Place beside compare_team_features.py in challenge2/models/.
+Place beside compare_team_features.py in challenge2/experiments/model_validation/.
 From the Git repository root run:
 
-    python challenge2/models/extra_trees_candidate.py --mode quick
+    python challenge2/experiments/model_validation/extra_trees_candidate.py --mode quick
 
 This compares three FIXED learner recipes on identical outer validation folds:
 Random Forest, Extra Trees, and a soft-voting ensemble of the team's three

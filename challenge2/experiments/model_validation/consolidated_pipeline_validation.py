@@ -1,11 +1,11 @@
 """Challenge 2: reproducible outer-fold audit of the TEAM-INSPIRED selection pipeline.
 
-Place in challenge2/models/ alongside:
+Place in challenge2/experiments/model_validation/ alongside:
   compare_team_features.py, team_pipeline_audit.py, compare_fixed_vs_auto.py
 
 From the repository root:
-  python challenge2/models/consolidated_pipeline_validation.py --mode quick
-  python challenge2/models/consolidated_pipeline_validation.py --mode full
+  python challenge2/experiments/model_validation/consolidated_pipeline_validation.py --mode quick
+  python challenge2/experiments/model_validation/consolidated_pipeline_validation.py --mode full
 
 Quick: 4 models and reduced search grids; NOT the complete team configuration.
 Full: the original 8 model families and tuning grids; potentially very expensive.

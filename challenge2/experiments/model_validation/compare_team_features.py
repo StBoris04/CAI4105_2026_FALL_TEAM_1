@@ -1,6 +1,6 @@
 """Challenge 2: compare team feature recipe vs new feature recipe fairly.
 
-Place beside model_improvements.py in challenge2/models/.
+Place beside model_improvements.py in challenge2/experiments/model_validation/.
 Run from repository outer directory using the Python 3.11 .venv311 interpreter.
 Does not import, execute, or change purchase_prediction.py.
 Does not read challenge2_test.csv or write predictions.csv.
@@ -35,7 +35,7 @@ def locate_data():
                           parent / 'challenge2' / 'data' / 'challenge2_train.csv'):
             if candidate.is_file():
                 return candidate
-    raise FileNotFoundError('Put this file in challenge2/models/ with challenge2/data/challenge2_train.csv')
+    raise FileNotFoundError('Put this file in challenge2/experiments/model_validation/ with challenge2/data/challenge2_train.csv')
 
 
 def team_features(df):

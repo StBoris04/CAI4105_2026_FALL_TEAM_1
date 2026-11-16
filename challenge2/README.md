@@ -42,3 +42,7 @@ jupyter notebook models/purchase_prediction.ipynb
 Tasks 1–5 use only `challenge2_train.csv` for exploration, validation, feature
 engineering, tuning, and final-model selection. Task 6 then loads the test CSV
 only to create `submissions/predictions.csv`.
+
+Optional exploratory validation scripts and their saved results are in
+[`experiments/model_validation/`](experiments/model_validation/). They provide
+supporting analysis and do not replace the notebook workflow.
